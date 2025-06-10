@@ -27,119 +27,223 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Summary Card -->
-            <com.google.android.material.card.MaterialCardView
+            android:padding="0dp">
+            <!-- Modern Welcome message and avatar -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
+                android:orientation="horizontal"
+                android:padding="32dp"
+                android:gravity="center_vertical"
+                android:background="@color/white"
+                android:elevation="2dp">
+                <ImageView
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:src="@android:drawable/sym_def_app_icon"
+                    android:background="@drawable/ic_launcher_background"
+                    android:scaleType="centerCrop"
+                    android:layout_marginEnd="20dp"
+                    android:contentDescription="User avatar"/>
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Monthly Overview"
-                        android:textAppearance="?attr/textAppearanceHeadline6"/>
-
-                    <TextView
-                        android:id="@+id/totalSubscriptionsText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Total Subscriptions: 0"
-                        android:textAppearance="?attr/textAppearanceBody1"/>
-
-                    <TextView
-                        android:id="@+id/totalMonthlyCostText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Monthly Cost: $0.00"
-                        android:textAppearance="?attr/textAppearanceBody1"/>
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Upcoming Renewals Card -->
-            <com.google.android.material.card.MaterialCardView
+                    android:text="Welcome back!"
+                    android:textStyle="bold"
+                    android:textSize="24sp"
+                    android:textColor="@color/black"/>
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="12dp"
+                android:background="@android:color/transparent"/>
+            <!-- Main content padding -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="12dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <LinearLayout
+                <!-- Summary Card -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:layout_marginBottom="20dp"
+                    app:cardElevation="8dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardBackgroundColor="@color/purple_200">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Upcoming Renewals"
-                        android:textAppearance="?attr/textAppearanceHeadline6"/>
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/upcomingRenewalsRecyclerView"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"/>
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
 
-                </LinearLayout>
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/ic_menu_info_details"
+                            android:tint="@color/purple_700"
+                            android:layout_marginEnd="12dp"/>
 
-            </com.google.android.material.card.MaterialCardView>
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1">
 
-            <!-- Quick Actions -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="12dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Monthly Overview"
+                                android:textStyle="bold"
+                                android:textSize="20sp"
+                                android:textColor="@color/purple_700"/>
 
-                <LinearLayout
+                            <TextView
+                                android:id="@+id/totalSubscriptionsText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="Total Subscriptions: 0"
+                                android:textAppearance="?attr/textAppearanceBody1"
+                                android:textColor="@color/black"/>
+
+                            <TextView
+                                android:id="@+id/totalMonthlyCostText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Monthly Cost: $0.00"
+                                android:textAppearance="?attr/textAppearanceBody1"
+                                android:textColor="@color/black"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/teal_200"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- Upcoming Renewals Card -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:layout_marginBottom="20dp"
+                    app:cardElevation="8dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardBackgroundColor="@color/teal_200">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Quick Actions"
-                        android:textAppearance="?attr/textAppearanceHeadline6"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/addSubscriptionButton"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Add New Subscription"
-                        app:icon="@android:drawable/ic_input_add"/>
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/viewCalendarButton"
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/ic_menu_agenda"
+                            android:tint="@color/teal_700"
+                            android:layout_marginEnd="12dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Upcoming Renewals"
+                                android:textStyle="bold"
+                                android:textSize="20sp"
+                                android:textColor="@color/teal_700"/>
+
+                            <androidx.recyclerview.widget.RecyclerView
+                                android:id="@+id/upcomingRenewalsRecyclerView"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/purple_200"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- Quick Actions -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardElevation="8dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardBackgroundColor="@color/purple_500">
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="View Calendar"
-                        app:icon="@android:drawable/ic_menu_my_calendar"/>
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
 
-                </LinearLayout>
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/ic_menu_manage"
+                            android:tint="@color/white"
+                            android:layout_marginEnd="12dp"/>
 
-            </com.google.android.material.card.MaterialCardView>
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1">
 
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Quick Actions"
+                                android:textStyle="bold"
+                                android:textSize="20sp"
+                                android:textColor="@color/white"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/addSubscriptionButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="Add New Subscription"
+                                app:icon="@android:drawable/ic_input_add"
+                                app:iconTint="@color/white"
+                                android:backgroundTint="@color/teal_700"
+                                android:textColor="@color/white"
+                                app:cornerRadius="24dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/viewCalendarButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="View Calendar"
+                                app:icon="@android:drawable/ic_menu_my_calendar"
+                                app:iconTint="@color/white"
+                                android:backgroundTint="@color/teal_700"
+                                android:textColor="@color/white"
+                                app:cornerRadius="24dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -149,6 +253,7 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:contentDescription="Add new subscription"
-        app:srcCompat="@android:drawable/ic_input_add"/>
+        app:srcCompat="@android:drawable/ic_input_add"
+        android:backgroundTint="@color/teal_700"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout> 
