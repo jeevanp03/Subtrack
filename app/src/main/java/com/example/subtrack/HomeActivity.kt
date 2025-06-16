@@ -74,7 +74,7 @@ class HomeActivity : AppCompatActivity() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val interval = 10_000L // 10 seconds
+        val interval = 2_000L // 2 seconds
 
         // Cancel any existing alarms first
         alarmManager.cancel(pendingIntent)
