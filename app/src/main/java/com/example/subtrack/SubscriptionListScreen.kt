@@ -16,8 +16,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
+    val subscriptions by viewModel.subscriptions.collectAsState()
+
     var showDialog by remember { mutableStateOf(false) }
     var editingSubscription by remember { mutableStateOf<Subscription?>(null) }
+
 
     Scaffold(
         floatingActionButton = {
@@ -38,7 +41,7 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
                 modifier = Modifier.padding(16.dp)
             )
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(viewModel.subscriptions) { sub ->
+                items(subscriptions) { sub ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -53,7 +56,7 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(sub.name, style = MaterialTheme.typography.titleMedium)
-                                Text("$${sub.cost} - ${sub.renewalDate}", style = MaterialTheme.typography.bodyMedium)
+                                Text("$${sub.amount} - ${sub.date}", style = MaterialTheme.typography.bodyMedium)
                                 Text(sub.category, style = MaterialTheme.typography.bodySmall)
                             }
                             IconButton(onClick = {
@@ -62,7 +65,7 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
                             }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Edit")
                             }
-                            IconButton(onClick = { viewModel.deleteSubscription(sub.id) }) {
+                            IconButton(onClick = { viewModel.delete(sub) }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete")
                             }
                         }
@@ -74,16 +77,30 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
             val sub = editingSubscription
             SubscriptionFormDialog(
                 initialName = sub?.name ?: "",
-                initialCost = sub?.cost?.toString() ?: "",
-                initialRenewalDate = sub?.renewalDate ?: "",
+                initialCost = sub?.amount?.toString() ?: "",
+                initialRenewalDate = sub?.date ?: "",
                 initialCategory = sub?.category ?: "",
                 onDismiss = { showDialog = false },
-                onSave = { name, cost, renewalDate, category ->
-                    if (sub == null) {
-                        viewModel.addSubscription(name, cost, renewalDate, category)
+                onSave = { name, amount, renewalDate, category ->
+                    val subscription = if (sub == null) {
+                        // New subscription: id = 0 (autoGenerate)
+                        Subscription(
+                            id = 0,
+                            name = name,
+                            amount = amount,
+                            date = renewalDate,
+                            category = category
+                        )
                     } else {
-                        viewModel.updateSubscription(sub.copy(name = name, cost = cost, renewalDate = renewalDate, category = category))
+                        // Editing existing subscription, keep its id
+                        sub.copy(
+                            name = name,
+                            amount = amount,
+                            date = renewalDate,
+                            category = category
+                        )
                     }
+                    viewModel.insert(subscription)
                     showDialog = false
                 }
             )

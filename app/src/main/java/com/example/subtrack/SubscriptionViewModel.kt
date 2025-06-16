@@ -1,25 +1,25 @@
 package com.example.subtrack
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-class SubscriptionViewModel : ViewModel() {
-    private var nextId = 1
-    var subscriptions = mutableStateListOf<Subscription>()
-        private set
+class SubscriptionViewModel(application: Application) : AndroidViewModel(application) {
+    private val dao = SubscriptionDatabase.getDatabase(application).subscriptionDao()
+    private val repository = SubscriptionRepository(dao)
 
-    fun addSubscription(name: String, cost: Double, renewalDate: String, category: String) {
-        subscriptions.add(Subscription(nextId++, name, cost, renewalDate, category))
+    val subscriptions: StateFlow<List<Subscription>> = repository.getAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun insert(subscription: Subscription) = viewModelScope.launch {
+        repository.insert(subscription)
     }
 
-    fun updateSubscription(updated: Subscription) {
-        val index = subscriptions.indexOfFirst { it.id == updated.id }
-        if (index != -1) {
-            subscriptions[index] = updated
-        }
+    fun delete(subscription: Subscription) = viewModelScope.launch {
+        repository.delete(subscription)
     }
-
-    fun deleteSubscription(id: Int) {
-        subscriptions.removeAll { it.id == id }
-    }
-} 
+}

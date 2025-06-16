@@ -1,5 +1,6 @@
 package com.example.subtrack
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -41,9 +42,10 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         addSubscriptionButton.setOnClickListener {
-            // TODO: Launch add subscription activity
-            Snackbar.make(fab, "Add subscription clicked", Snackbar.LENGTH_SHORT).show()
+            val intent = Intent(this, AddSubscriptionActivity::class.java)
+            startActivity(intent)
         }
+
 
         viewCalendarButton.setOnClickListener {
             // TODO: Launch calendar view
@@ -51,9 +53,10 @@ class HomeActivity : AppCompatActivity() {
         }
 
         fab.setOnClickListener {
-            // TODO: Launch add subscription activity
-            Snackbar.make(fab, "Add subscription clicked", Snackbar.LENGTH_SHORT).show()
+            val intent = Intent(this, AddSubscriptionActivity::class.java)
+            startActivity(intent)
         }
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
