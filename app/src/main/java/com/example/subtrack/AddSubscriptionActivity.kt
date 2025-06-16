@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import java.util.*
 
 class AddSubscriptionActivity : AppCompatActivity() {
@@ -100,7 +101,7 @@ class AddSubscriptionActivity : AppCompatActivity() {
         val viewModel = SubscriptionViewModel(application)
         viewModel.insert(subscription)
 
-        Toast.makeText(this, "Saved!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Subscription Saved Successfully!", Toast.LENGTH_SHORT).show()
         finish()
     }
 
