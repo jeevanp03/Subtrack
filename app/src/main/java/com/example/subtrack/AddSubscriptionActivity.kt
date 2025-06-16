@@ -11,6 +11,7 @@ class AddSubscriptionActivity : AppCompatActivity() {
     private lateinit var amountEditText: EditText
     private lateinit var dateButton: Button
     private lateinit var categorySpinner: Spinner
+    private lateinit var renewalFrequencySpinner: Spinner
     private lateinit var saveButton: Button
 
     private var selectedDate: String = ""
@@ -23,10 +24,12 @@ class AddSubscriptionActivity : AppCompatActivity() {
         amountEditText = findViewById(R.id.amountEditText)
         dateButton = findViewById(R.id.dateButton)
         categorySpinner = findViewById(R.id.categorySpinner)
+        renewalFrequencySpinner = findViewById(R.id.renewalFrequencySpinner)
         saveButton = findViewById(R.id.saveButton)
 
         setupDatePicker()
         setupCategorySpinner()
+        setupRenewalFrequencySpinner()
 
         saveButton.setOnClickListener {
             saveSubscription()
@@ -53,13 +56,34 @@ class AddSubscriptionActivity : AppCompatActivity() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories)
         categorySpinner.adapter = adapter
     }
+    private val frequencyOptions = mapOf(
+        "Weekly" to 52,
+        "Biweekly" to 26,
+        "Monthly" to 12,
+        "Quarterly" to 4,
+        "Semiannually" to 2,
+        "Annually" to 1
+    )
+
+    private fun setupRenewalFrequencySpinner() {
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            frequencyOptions.keys.toList()
+        )
+        renewalFrequencySpinner.adapter = adapter
+    }
+
 
     private fun saveSubscription() {
         val name = nameEditText.text.toString()
         val amount = amountEditText.text.toString().toDoubleOrNull()
         val category = categorySpinner.selectedItem.toString()
+        val selectedFrequency = renewalFrequencySpinner.selectedItem.toString()
+        val renewals = frequencyOptions[selectedFrequency]
 
-        if (name.isEmpty() || amount == null || selectedDate.isEmpty()) {
+
+        if (name.isEmpty() || amount == null || selectedDate.isEmpty() || renewals == null) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             return
         }
@@ -68,8 +92,10 @@ class AddSubscriptionActivity : AppCompatActivity() {
             name = name,
             amount = amount,
             date = selectedDate,
-            category = category
+            category = category,
+            renewalsPerYear = renewals
         )
+
 
         val viewModel = SubscriptionViewModel(application)
         viewModel.insert(subscription)

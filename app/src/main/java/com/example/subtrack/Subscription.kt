@@ -9,5 +9,6 @@ data class Subscription(
     val name: String,
     val amount: Double,
     val date: String,
-    val category: String
+    val category: String,
+    val renewalsPerYear: Int
 )

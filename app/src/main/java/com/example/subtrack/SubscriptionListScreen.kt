@@ -81,23 +81,23 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
                 initialRenewalDate = sub?.date ?: "",
                 initialCategory = sub?.category ?: "",
                 onDismiss = { showDialog = false },
-                onSave = { name, amount, renewalDate, category ->
+                onSave = { name, amount, renewalDate, category, renewalsPerYear ->
                     val subscription = if (sub == null) {
-                        // New subscription: id = 0 (autoGenerate)
                         Subscription(
                             id = 0,
                             name = name,
                             amount = amount,
                             date = renewalDate,
-                            category = category
+                            category = category,
+                            renewalsPerYear = renewalsPerYear
                         )
                     } else {
-                        // Editing existing subscription, keep its id
                         sub.copy(
                             name = name,
                             amount = amount,
                             date = renewalDate,
-                            category = category
+                            category = category,
+                            renewalsPerYear = renewalsPerYear
                         )
                     }
                     viewModel.insert(subscription)
