@@ -8,9 +8,17 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.subtrack.ui.account.CreateAccountScreen
+import com.example.subtrack.ui.account.LoginScreen
+import com.example.subtrack.ui.theme.SubtrackTheme
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
@@ -29,6 +37,37 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setContent {
+            var showLogin by rememberSaveable { mutableStateOf(true) }
+
+            SubtrackTheme {
+                if (showLogin) {
+                    LoginScreen(
+                        onLoginSuccess = { email ->
+                            recreateAsXmlHome()
+                        },
+                        onNavigateToCreateAccount = {
+                            showLogin = false
+                        }
+                    )
+                } else {
+                    CreateAccountScreen(
+                        onCreateAccount = { email, password ->
+                            recreateAsXmlHome()
+                        },
+                        onBackToLogin = {
+                            showLogin = true // ✅ Go back to login
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+
+    private fun recreateAsXmlHome() {
+        // Switch from Compose to your original XML layout
         setContentView(R.layout.activity_home)
 
         // Schedule repeating notifications every 10 seconds
@@ -43,11 +82,7 @@ class HomeActivity : AppCompatActivity() {
         fab = findViewById(R.id.fab)
         createNotificationChannel(this)
 
-        // Setup RecyclerView
         upcomingRenewalsRecyclerView.layoutManager = LinearLayoutManager(this)
-        // TODO: Set up adapter for upcoming renewals
-
-        // Setup click listeners
         setupClickListeners()
     }
     private fun createNotificationChannel(context: Context) {
@@ -74,7 +109,7 @@ class HomeActivity : AppCompatActivity() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val interval = 10_000L // 10 seconds
+        val interval = 2_000L // 2 seconds
 
         // Cancel any existing alarms first
         alarmManager.cancel(pendingIntent)
@@ -90,17 +125,14 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         addSubscriptionButton.setOnClickListener {
-            // TODO: Launch add subscription activity
             Snackbar.make(fab, "Add subscription clicked", Snackbar.LENGTH_SHORT).show()
         }
 
         viewCalendarButton.setOnClickListener {
-            // TODO: Launch calendar view
             Snackbar.make(fab, "View calendar clicked", Snackbar.LENGTH_SHORT).show()
         }
 
         fab.setOnClickListener {
-            // TODO: Launch add subscription activity
             Snackbar.make(fab, "Add subscription clicked", Snackbar.LENGTH_SHORT).show()
         }
     }
@@ -113,17 +145,14 @@ class HomeActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_notifications -> {
-                // TODO: Show notifications
                 Snackbar.make(fab, "Notifications clicked", Snackbar.LENGTH_SHORT).show()
                 true
             }
             R.id.action_settings -> {
-                // TODO: Launch settings activity
                 Snackbar.make(fab, "Settings clicked", Snackbar.LENGTH_SHORT).show()
                 true
             }
             R.id.action_profile -> {
-                // TODO: Launch profile activity
                 Snackbar.make(fab, "Profile clicked", Snackbar.LENGTH_SHORT).show()
                 true
             }
