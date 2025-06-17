@@ -10,5 +10,7 @@ data class Subscription(
     val amount: Double,
     val date: String,
     val category: String,
-    val renewalsPerYear: Int
+    val renewalsPerYear: Int, // Kept for future use, not used in current calculations
+    val frequencyInDays: Int = 30,  // Default to monthly (30 days)
+    val nextPaymentDate: Long = System.currentTimeMillis()  // Store as timestamp
 )

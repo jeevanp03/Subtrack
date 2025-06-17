@@ -14,6 +14,9 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
 
     val subscriptions: StateFlow<List<Subscription>> = repository.getAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        
+    val upcomingPayments: StateFlow<List<Subscription>> = repository.getUpcomingPayments()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun insert(subscription: Subscription) = viewModelScope.launch {
         repository.insert(subscription)
@@ -21,5 +24,9 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
 
     fun delete(subscription: Subscription) = viewModelScope.launch {
         repository.delete(subscription)
+    }
+    
+    fun updateNextPaymentDate(subscriptionId: Int, newDate: Long) = viewModelScope.launch {
+        repository.updateNextPaymentDate(subscriptionId, newDate)
     }
 }

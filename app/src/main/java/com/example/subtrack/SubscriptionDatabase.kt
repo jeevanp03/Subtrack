@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Subscription::class], version = 11)
+@Database(entities = [Subscription::class], version = 12)
 abstract class SubscriptionDatabase : RoomDatabase() {
     abstract fun subscriptionDao(): SubscriptionDao
 
@@ -18,7 +18,9 @@ abstract class SubscriptionDatabase : RoomDatabase() {
                     context.applicationContext,
                     SubscriptionDatabase::class.java,
                     "subscription_db"
-                ).fallbackToDestructiveMigration().build().also { instance = it }
+                )
+                .fallbackToDestructiveMigration()
+                .build().also { instance = it }
             }
     }
 }
