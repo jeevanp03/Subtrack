@@ -1,50 +1,91 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@color/backgroundGrey"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/nameEditText"
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="22dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Subscription Name" />
+        android:layout_height="wrap_content">
 
-    <EditText
-        android:id="@+id/amountEditText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:hint="Amount" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Subscription"
+            android:textStyle="bold"
+            android:textColor="@color/primaryPurple"
+            android:textSize="20sp"
+            android:layout_marginBottom="16dp"/>
 
-    <Button
-        android:id="@+id/dateButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Select Date" />
+        <EditText
+            android:id="@+id/nameEditText"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="Subscription Name"
+            android:background="@drawable/bg_edittext"
+            android:layout_marginBottom="10dp"
+            android:paddingStart="10dp"/>
 
-    <Spinner
-        android:id="@+id/categorySpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-    <Spinner
-        android:id="@+id/renewalFrequencySpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:spinnerMode="dropdown" />
+        <EditText
+            android:id="@+id/amountEditText"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="Amount"
+            android:background="@drawable/bg_edittext"
+            android:inputType="numberDecimal"
+            android:layout_marginBottom="10dp"
+            android:paddingStart="10dp"/>
 
+        <Button
+            android:id="@+id/dateButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Select Date"
+            android:textAllCaps="false"
+            android:backgroundTint="@color/primaryPurple"
+            android:textColor="@color/buttonText"
+            android:layout_marginBottom="10dp"/>
 
-    <Button
-        android:id="@+id/saveButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Save Subscription"/>
+        <Spinner
+            android:id="@+id/categorySpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_edittext"
+            android:layout_marginBottom="10dp"/>
 
-    <Button
-        android:id="@+id/cancelButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Cancel"/>
-</LinearLayout>
+        <Spinner
+            android:id="@+id/renewalFrequencySpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_edittext"
+            android:layout_marginBottom="18dp"/>
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Save Subscription"
+            android:textAllCaps="false"
+            android:backgroundTint="@color/primaryPurple"
+            android:textColor="@color/buttonText"
+            android:layout_marginBottom="10dp"/>
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Cancel"
+            android:textAllCaps="false"
+            android:backgroundTint="#E0E0E0"
+            android:textColor="#333"/>
+
+        <TextView
+            android:id="@+id/errorText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/holo_red_dark"
+            android:text=""
+            android:visibility="gone"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</ScrollView>
