@@ -29,4 +29,17 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
     fun updateNextPaymentDate(subscriptionId: Int, newDate: Long) = viewModelScope.launch {
         repository.updateNextPaymentDate(subscriptionId, newDate)
     }
+    
+    fun markPaymentCompleted(subscriptionId: Int) = viewModelScope.launch {
+        repository.markPaymentCompleted(subscriptionId)
+    }
+    
+    fun updateOverduePayments() = viewModelScope.launch {
+        repository.updateOverduePayments()
+    }
+    
+    // Call this when the app starts or when needed to ensure all payment dates are current
+    fun refreshPaymentDates() = viewModelScope.launch {
+        repository.updateOverduePayments()
+    }
 }

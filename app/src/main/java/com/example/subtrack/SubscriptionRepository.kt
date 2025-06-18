@@ -24,6 +24,30 @@ class SubscriptionRepository(private val dao: SubscriptionDao) {
         dao.updateNextPaymentDate(subscriptionId, newDate)
     }
     
+    suspend fun markPaymentCompleted(subscriptionId: Int) {
+        val subscription = dao.getSubscriptionById(subscriptionId)
+        subscription?.let {
+            val nextPaymentDate = PaymentDateUtil.calculateNextPaymentDateFromCurrent(
+                it.nextPaymentDate,
+                it.frequencyInDays
+            )
+            dao.updateNextPaymentDate(subscriptionId, nextPaymentDate)
+        }
+    }
+    
+    suspend fun updateOverduePayments() {
+        val allSubscriptions = dao.getAllSync()
+        for (subscription in allSubscriptions) {
+            if (PaymentDateUtil.isPaymentDatePassed(subscription.nextPaymentDate)) {
+                val nextPaymentDate = PaymentDateUtil.calculateNextPaymentDate(
+                    PaymentDateUtil.formatDate(subscription.nextPaymentDate),
+                    subscription.frequencyInDays
+                )
+                dao.updateNextPaymentDate(subscription.id, nextPaymentDate)
+            }
+        }
+    }
+    
     suspend fun delete(subscription: Subscription) = dao.delete(subscription)
 }
 

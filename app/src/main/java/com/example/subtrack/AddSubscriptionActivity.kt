@@ -96,7 +96,7 @@ class AddSubscriptionActivity : AppCompatActivity() {
     }
 
     private fun saveSubscription() {
-        val name = nameEditText.text.toString()
+        val name = nameEditText.text.toString().trim()
         val amount = amountEditText.text.toString().toDoubleOrNull()
         val category = categorySpinner.selectedItem.toString()
         val selectedFrequencyIndex = frequencySpinner.selectedItemPosition
@@ -107,7 +107,17 @@ class AddSubscriptionActivity : AppCompatActivity() {
             return
         }
 
+        if (amount <= 0) {
+            Toast.makeText(this, "Amount must be greater than 0", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Calculate the next payment date based on the selected frequency
         val nextPaymentDate = PaymentDateUtil.calculateNextPaymentDate(selectedDate, frequencyInDays)
+        
+        // Format the next payment date for display
+        val nextPaymentDateFormatted = PaymentDateUtil.formatDateForDisplay(nextPaymentDate)
+        val daysUntilPayment = PaymentDateUtil.getDaysUntilPayment(nextPaymentDate)
 
         val subscription = Subscription(
             name = name,
@@ -119,10 +129,16 @@ class AddSubscriptionActivity : AppCompatActivity() {
             nextPaymentDate = nextPaymentDate
         )
 
+        // Debug logging
+        SubscriptionDebugUtil.logSubscriptionDetails(subscription)
+        SubscriptionDebugUtil.testRecurringDateCalculation(selectedDate, frequencyInDays)
+
         val viewModel = ViewModelProvider(this).get(SubscriptionViewModel::class.java)
         viewModel.insert(subscription)
 
-        Toast.makeText(this, "Subscription Saved Successfully!", Toast.LENGTH_SHORT).show()
+        // Show success message with next payment information
+        val successMessage = "Subscription saved! Next payment: $nextPaymentDateFormatted (in $daysUntilPayment days)"
+        Toast.makeText(this, successMessage, Toast.LENGTH_LONG).show()
         finish()
     }
 }

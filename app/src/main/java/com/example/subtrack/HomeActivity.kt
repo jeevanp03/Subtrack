@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -22,6 +23,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
+import android.util.Log
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +39,12 @@ class HomeActivity : ComponentActivity() {
 fun HomeScreen(viewModel: SubscriptionViewModel) {
     val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
     val context = LocalContext.current
+
+    // Refresh payment dates when the screen is first displayed
+    LaunchedEffect(Unit) {
+        viewModel.refreshPaymentDates()
+        Log.d("HomeActivity", "Refreshed payment dates on startup")
+    }
 
     Scaffold(
         topBar = {
@@ -86,17 +94,18 @@ fun HomeScreen(viewModel: SubscriptionViewModel) {
                 )
             }
             items(subscriptions.sortedBy { it.nextPaymentDate }) { sub ->
-                SubscriptionItem(sub)
+                SubscriptionItem(sub, viewModel)
             }
         }
     }
 }
 
 @Composable
-fun SubscriptionItem(sub: Subscription) {
-    val formattedDate = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-        .format(Date(sub.nextPaymentDate))
-    val frequencyLabel = FrequencyUtil.getFrequencyLabel(sub.frequencyInDays)
+fun SubscriptionItem(sub: Subscription, viewModel: SubscriptionViewModel) {
+    val formattedDate = PaymentDateUtil.formatDateForDisplay(sub.nextPaymentDate)
+    val frequencyLabel = PaymentDateUtil.getFrequencyLabel(sub.frequencyInDays)
+    val daysUntilPayment = PaymentDateUtil.getDaysUntilPayment(sub.nextPaymentDate)
+    val isOverdue = PaymentDateUtil.isPaymentDatePassed(sub.nextPaymentDate)
 
     Card(
         modifier = Modifier
@@ -105,11 +114,41 @@ fun SubscriptionItem(sub: Subscription) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = sub.name, style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = sub.name, 
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (isOverdue) {
+                    Text(
+                        text = "OVERDUE",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text("Next Payment: $formattedDate")
+            Text(
+                text = if (isOverdue) "Overdue by ${-daysUntilPayment} days" else "Due in $daysUntilPayment days",
+                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+            )
             Text("Amount: $${"%.2f".format(sub.amount)}")
             Text("Frequency: $frequencyLabel")
+            
+            if (!isOverdue) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.markPaymentCompleted(sub.id) },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Mark as Paid")
+                }
+            }
         }
     }
 }
@@ -119,7 +158,7 @@ fun MonthlyOverview(subscriptions: List<Subscription>) {
     val frequencyMap = mutableMapOf<String, Double>()
 
     subscriptions.forEach { sub ->
-        val label = FrequencyUtil.getFrequencyLabel(sub.frequencyInDays)
+        val label = PaymentDateUtil.getFrequencyLabel(sub.frequencyInDays)
         val current = frequencyMap[label] ?: 0.0
         frequencyMap[label] = current + sub.amount
     }
