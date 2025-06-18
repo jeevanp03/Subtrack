@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.example.subtrack
 
 import android.app.AlarmManager
@@ -5,129 +7,189 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.os.SystemClock
-import android.view.Menu
-import android.view.MenuItem
-import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
-import android.widget.TextView
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.lifecycle.ViewModelProvider
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.*
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import android.util.Log
 
-class HomeActivity : AppCompatActivity() {
-    private lateinit var upcomingRenewalsRecyclerView: RecyclerView
-    private lateinit var totalSubscriptionsText: TextView
-    private lateinit var totalMonthlyCostText: TextView
-    private lateinit var addSubscriptionButton: MaterialButton
-    private lateinit var viewCalendarButton: MaterialButton
-    private lateinit var fab: FloatingActionButton
-
+class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_home)
-
-        // Schedule repeating notifications every 10 seconds
-        scheduleNotification(this)
-
-        // Initialize views
-        upcomingRenewalsRecyclerView = findViewById(R.id.upcomingRenewalsRecyclerView)
-        totalSubscriptionsText = findViewById(R.id.totalSubscriptionsText)
-        totalMonthlyCostText = findViewById(R.id.totalMonthlyCostText)
-        addSubscriptionButton = findViewById(R.id.addSubscriptionButton)
-        viewCalendarButton = findViewById(R.id.viewCalendarButton)
-        fab = findViewById(R.id.fab)
-        createNotificationChannel(this)
-
-        // Setup RecyclerView
-        upcomingRenewalsRecyclerView.layoutManager = LinearLayoutManager(this)
-        // TODO: Set up adapter for upcoming renewals
-
-        // Setup click listeners
-        setupClickListeners()
-    }
-    private fun createNotificationChannel(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "subtrack_channel_id"
-            val channelName = "SubTrack Notifications"
-            val channelDescription = "Notifications for subscription tracking"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(channelId, channelName, importance).apply {
-                description = channelDescription
-            }
-            val notificationManager: NotificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+        setContent {
+            val viewModel = ViewModelProvider(this)[SubscriptionViewModel::class.java]
+            HomeScreen(viewModel)
         }
     }
-    private fun scheduleNotification(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, NotificationReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+}
 
-        val interval = 2_000L // 2 seconds
+@Composable
+fun HomeScreen(viewModel: SubscriptionViewModel) {
+    val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
+    val context = LocalContext.current
 
-        // Cancel any existing alarms first
-        alarmManager.cancel(pendingIntent)
-
-        // Set a repeating alarm every 10 seconds
-        alarmManager.setRepeating(
-            AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            SystemClock.elapsedRealtime() + interval,
-            interval,
-            pendingIntent
-        )
+    // Refresh payment dates when the screen is first displayed
+    LaunchedEffect(Unit) {
+        viewModel.refreshPaymentDates()
+        Log.d("HomeActivity", "Refreshed payment dates on startup")
     }
 
-    private fun setupClickListeners() {
-        addSubscriptionButton.setOnClickListener {
-            // TODO: Launch add subscription activity
-            Snackbar.make(fab, "Add subscription clicked", Snackbar.LENGTH_SHORT).show()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Subtrak") },
+                actions = {
+                    IconButton(onClick = { /* Profile action */ }) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(onClick = {
+                    val intent = Intent(context, AddSubscriptionActivity::class.java)
+                    context.startActivity(intent)
+                }) {
+                    Text("Add Subscription")
+                }
+                Button(onClick = { /* TODO: Add navigation to Calendar */ }) {
+                    Text("View Calendar")
+                }
+            }
         }
-
-        viewCalendarButton.setOnClickListener {
-            // TODO: Launch calendar view
-            Snackbar.make(fab, "View calendar clicked", Snackbar.LENGTH_SHORT).show()
-        }
-
-        fab.setOnClickListener {
-            // TODO: Launch add subscription activity
-            Snackbar.make(fab, "Add subscription clicked", Snackbar.LENGTH_SHORT).show()
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
+        ) {
+            item {
+                MonthlyOverview(subscriptions)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            item {
+                Text(
+                    text = "Upcoming Renewals",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            items(subscriptions.sortedBy { it.nextPaymentDate }) { sub ->
+                SubscriptionItem(sub, viewModel)
+            }
         }
     }
+}
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.top_app_bar, menu)
-        return true
+@Composable
+fun SubscriptionItem(sub: Subscription, viewModel: SubscriptionViewModel) {
+    val formattedDate = PaymentDateUtil.formatDateForDisplay(sub.nextPaymentDate)
+    val frequencyLabel = PaymentDateUtil.getFrequencyLabel(sub.frequencyInDays)
+    val daysUntilPayment = PaymentDateUtil.getDaysUntilPayment(sub.nextPaymentDate)
+    val isOverdue = PaymentDateUtil.isPaymentDatePassed(sub.nextPaymentDate)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = sub.name, 
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (isOverdue) {
+                    Text(
+                        text = "OVERDUE",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Next Payment: $formattedDate")
+            Text(
+                text = if (isOverdue) "Overdue by ${-daysUntilPayment} days" else "Due in $daysUntilPayment days",
+                color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+            )
+            Text("Amount: $${"%.2f".format(sub.amount)}")
+            Text("Frequency: $frequencyLabel")
+            
+            if (!isOverdue) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.markPaymentCompleted(sub.id) },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Mark as Paid")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonthlyOverview(subscriptions: List<Subscription>) {
+    val frequencyMap = mutableMapOf<String, Double>()
+
+    subscriptions.forEach { sub ->
+        val label = PaymentDateUtil.getFrequencyLabel(sub.frequencyInDays)
+        val current = frequencyMap[label] ?: 0.0
+        frequencyMap[label] = current + sub.amount
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_notifications -> {
-                // TODO: Show notifications
-                Snackbar.make(fab, "Notifications clicked", Snackbar.LENGTH_SHORT).show()
-                true
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Monthly Overview",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text("Total Subscriptions: ${subscriptions.size}")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text("Recurring Cost:")
+
+            frequencyMap.forEach { (label, total) ->
+                Text("• $label: $${"%.2f".format(total)}")
             }
-            R.id.action_settings -> {
-                // TODO: Launch settings activity
-                Snackbar.make(fab, "Settings clicked", Snackbar.LENGTH_SHORT).show()
-                true
-            }
-            R.id.action_profile -> {
-                // TODO: Launch profile activity
-                Snackbar.make(fab, "Profile clicked", Snackbar.LENGTH_SHORT).show()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
         }
     }
 }

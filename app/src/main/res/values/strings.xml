@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">Subtrack</string>
+    <string-array name="categories">
+        <item>Streaming</item>
+        <item>Productivity</item>
+        <item>Fitness</item>
+        <item>Other</item>
+    </string-array>
+    <string-array name="frequencies">
+        <item>Weekly</item>
+        <item>Biweekly</item>
+        <item>Monthly</item>
+        <item>Quarterly</item>
+        <item>Semiannually</item>
+        <item>Annually</item>
+    </string-array>
 </resources>

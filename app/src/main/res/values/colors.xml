@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="primaryPurple">#6200EE</color>
+    <color name="lightCard">#F6F6F6</color>
+    <color name="buttonText">#FFFFFF</color>
+    <color name="backgroundGrey">#FAFAFA</color>
+    <color name="cardShadow">#33000000</color>
 </resources>
