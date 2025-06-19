@@ -49,5 +49,7 @@ class SubscriptionRepository(private val dao: SubscriptionDao) {
     }
     
     suspend fun delete(subscription: Subscription) = dao.delete(subscription)
+
+    suspend fun clearAllData() = dao.deleteAll()
 }
 

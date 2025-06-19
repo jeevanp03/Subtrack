@@ -42,4 +42,9 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
     fun refreshPaymentDates() = viewModelScope.launch {
         repository.updateOverduePayments()
     }
+
+    // WARNING: This will delete all data from the database. Use only in development!
+    fun clearAllData() = viewModelScope.launch {
+        repository.clearAllData()
+    }
 }

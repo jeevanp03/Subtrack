@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
@@ -54,6 +55,13 @@ fun HomeScreen(viewModel: SubscriptionViewModel) {
             TopAppBar(
                 title = { Text("Subtrak") },
                 actions = {
+                    // Debug button to clear database
+                    IconButton(onClick = { 
+                        viewModel.clearAllData()
+                        Log.d("HomeActivity", "Database cleared")
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Clear Database")
+                    }
                     IconButton(onClick = { /* Profile action */ }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
