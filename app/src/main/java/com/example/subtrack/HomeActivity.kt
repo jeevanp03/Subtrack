@@ -122,9 +122,13 @@ class HomeActivity : ComponentActivity() {
                             Text("Add Subscription")
                         }
 
-                        Button(onClick = { /* TODO: Add navigation to Calendar */ }) {
+                        Button(onClick = {
+                            val intent = Intent(context, com.example.subtrack.calendar.CalendarActivity::class.java)
+                            context.startActivity(intent)
+                        }) {
                             Text("View Calendar")
                         }
+
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
