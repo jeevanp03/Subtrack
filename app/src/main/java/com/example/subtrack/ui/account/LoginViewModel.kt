@@ -17,7 +17,12 @@ class LoginViewModel : ViewModel() {
         } else {
             errorMessage = null
             onSuccess(email)
+            clearFields()
         }
+    }
+    fun clearFields() {
+        email = ""
+        password = ""
     }
 
     fun clearError() {
