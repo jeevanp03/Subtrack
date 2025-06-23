@@ -26,7 +26,18 @@
         </activity>
         <receiver android:name=".NotificationReceiver" />
 
+        <receiver android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".NotificationReceiver" />
+
     </application>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
 </manifest>
