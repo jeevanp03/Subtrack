@@ -30,62 +30,71 @@ import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
 
+
+// --------------------------------------
+// MAIN ACTIVITY: Entry point for Subtrak app
+// Manages Login, Account Creation, and Home screens
+// --------------------------------------
+
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        // Compose UI setup
         setContent {
-            var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
-
+            var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) } // Tracks which screen to show
+            // Basic navigation logic between screens
             when (screenState) {
-                ScreenState.LOGIN -> {
+                ScreenState.LOGIN -> {  // Show login screen
                     LoginScreen(
                         onLoginSuccess = {
-                            screenState = ScreenState.HOME
+                            screenState = ScreenState.HOME  // Navigate to home after successful login
                         },
                         onNavigateToCreateAccount = {
-                            screenState = ScreenState.CREATE_ACCOUNT
+                            screenState = ScreenState.CREATE_ACCOUNT // Navigate to account creation screen
                         }
                     )
                 }
 
-                ScreenState.CREATE_ACCOUNT -> {
+                ScreenState.CREATE_ACCOUNT -> { // Show account creation screen
                     CreateAccountScreen(
                         onCreateAccount = { email, password ->
                             // TODO: Handle account creation logic here (e.g., Firebase/Auth API)
-                            screenState = ScreenState.HOME
+                            screenState = ScreenState.HOME // Navigate to home after creating account
                         },
                         onBackToLogin = {
-                            screenState = ScreenState.LOGIN
+                            screenState = ScreenState.LOGIN // Return to login screen
                         }
                     )
                 }
 
-                ScreenState.HOME -> {
-                    val viewModel = ViewModelProvider(this)[SubscriptionViewModel::class.java]
+                ScreenState.HOME -> { // Show main app screen
+                    val viewModel = ViewModelProvider(this)[SubscriptionViewModel::class.java] // Get ViewModel instance
                     HomeScreen(
                         viewModel = viewModel,
-                        onLogout = { screenState = ScreenState.LOGIN }
+                        onLogout = { screenState = ScreenState.LOGIN } // Handle logout action
                     )
                 }
             }
         }
     }
-
+    
+    // --------------------------------------
+    // HOME SCREEN UI - Displays subscription list & actions
+    // --------------------------------------
     @Composable
     fun HomeScreen(
         viewModel: SubscriptionViewModel,
         onLogout: () -> Unit
     ) {
-        val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
-        val context = LocalContext.current
+        val subscriptions by viewModel.subscriptions.collectAsState(emptyList())  // Observe subscription list from ViewModel
+        val context = LocalContext.current  // Access current context for navigation
 
         // Refresh payment dates when the screen is first displayed
         LaunchedEffect(Unit) {
             viewModel.refreshPaymentDates()
             Log.d("HomeActivity", "Refreshed payment dates on startup")
         }
-
+        // Scaffold provides Top Bar, Bottom Bar, and Content Layout
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -98,7 +107,8 @@ class HomeActivity : ComponentActivity() {
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = "Clear Database")
                         }
-                        IconButton(onClick = { /* Profile action */ }) {
+                        // Placeholder for Profile functionality
+                        IconButton(onClick = { /* Profile action */ }) {   
                             Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                         }
                     }
@@ -111,6 +121,7 @@ class HomeActivity : ComponentActivity() {
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Row with Add Subscription and Calendar button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -166,7 +177,9 @@ class HomeActivity : ComponentActivity() {
             }
         }
     }
-
+    // --------------------------------------
+    // Renders details for a single subscription entry
+    // --------------------------------------
     @Composable
     fun SubscriptionItem(sub: Subscription, viewModel: SubscriptionViewModel) {
         val formattedDate = PaymentDateUtil.formatDateForDisplay(sub.nextPaymentDate)
@@ -218,11 +231,13 @@ class HomeActivity : ComponentActivity() {
             }
         }
     }
-
+    // --------------------------------------
+    // Displays summary of all subscriptions grouped by frequency
+    // --------------------------------------
     @Composable
     fun MonthlyOverview(subscriptions: List<Subscription>) {
         val frequencyMap = mutableMapOf<String, Double>()
-
+        // Sum total subscription cost per frequency label
         subscriptions.forEach { sub ->
             val label = PaymentDateUtil.getFrequencyLabel(sub.frequencyInDays)
             val current = frequencyMap[label] ?: 0.0
