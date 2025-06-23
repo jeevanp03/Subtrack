@@ -270,4 +270,17 @@ class HomeActivity : ComponentActivity() {
             }
         }
     }
+
+
+    // --------------------------------------
+    // ADD NAV BAR (Clickable/ minimlaist)
+    // --------------------------------------
+
+    // --------------------------------------
+    // ADD SEARCH BAR (search subsciptions)
+    // --------------------------------------
+
+    // --------------------------------------
+    // NOTIFCATIONS BANNER (IE incoming payment...for snapchat)
+    // --------------------------------------
 }
