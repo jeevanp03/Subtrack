@@ -22,8 +22,8 @@ class NotificationReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, "subtrack_channel_id")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Subscription Reminder")
-            .setContentText("Don't forget to check your subscriptions!")
+            .setContentTitle("Subscription Payment Reminder")
+            .setContentText("Incoming payment for XXXXXXX due in 24 hours!")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
