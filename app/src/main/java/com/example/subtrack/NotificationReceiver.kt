@@ -24,25 +24,28 @@ class NotificationReceiver : BroadcastReceiver() {
         val db = SubscriptionDatabase.getDatabase(context)
         val dao = db.subscriptionDao()
 
-        val now = Calendar.getInstance()
-        val startOfTomorrow = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val endOfTomorrow = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1)
-            set(Calendar.HOUR_OF_DAY, 23)
-            set(Calendar.MINUTE, 59)
-            set(Calendar.SECOND, 59)
-            set(Calendar.MILLISECOND, 999)
-        }
-
         CoroutineScope(Dispatchers.IO).launch {
-            val dueSubscriptions = dao.getAllSync().filter {
-                it.nextPaymentDate in startOfTomorrow.timeInMillis..endOfTomorrow.timeInMillis
+            val now = Calendar.getInstance()
+            val todayStart = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val todayEnd = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 23)
+                set(Calendar.MINUTE, 59)
+                set(Calendar.SECOND, 59)
+                set(Calendar.MILLISECOND, 999)
+            }
+
+            val dueSubscriptions = dao.getAllSync().filter { sub ->
+                val paymentDateCal = Calendar.getInstance().apply {
+                    timeInMillis = sub.nextPaymentDate
+                }
+                paymentDateCal.add(Calendar.DAY_OF_YEAR, -sub.remindDaysBefore)
+
+                paymentDateCal.timeInMillis in todayStart.timeInMillis..todayEnd.timeInMillis
             }
 
             if (dueSubscriptions.isNotEmpty()) {
@@ -52,7 +55,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                         .setSmallIcon(android.R.drawable.ic_dialog_info)
                         .setContentTitle("Upcoming Subscription")
-                        .setContentText("Payment for ${sub.name} is due tomorrow.")
+                        .setContentText("Payment for ${sub.name} is due in ${sub.remindDaysBefore} day(s).")
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
                         .build()
 
@@ -61,6 +64,7 @@ class NotificationReceiver : BroadcastReceiver() {
             }
         }
     }
+
 
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

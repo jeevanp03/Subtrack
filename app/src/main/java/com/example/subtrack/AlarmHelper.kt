@@ -19,7 +19,7 @@ object AlarmHelper {
 
         val calendar = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 15)
-            set(Calendar.MINUTE, 9)
+            set(Calendar.MINUTE, 54)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             if (timeInMillis < System.currentTimeMillis()) {

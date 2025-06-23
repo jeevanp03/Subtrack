@@ -10,6 +10,7 @@ import java.util.*
 class AddSubscriptionActivity : AppCompatActivity() {
     private lateinit var nameEditText: EditText
     private lateinit var amountEditText: EditText
+    private lateinit var remindDaysBeforeEditText: EditText
     private lateinit var dateButton: Button
     private lateinit var categorySpinner: Spinner
     private lateinit var frequencySpinner: Spinner
@@ -37,6 +38,7 @@ class AddSubscriptionActivity : AppCompatActivity() {
 
         nameEditText = findViewById(R.id.nameEditText)
         amountEditText = findViewById(R.id.amountEditText)
+        remindDaysBeforeEditText = findViewById(R.id.remindDaysBeforeEditText)
         dateButton = findViewById(R.id.dateButton)
         categorySpinner = findViewById(R.id.categorySpinner)
         frequencySpinner = findViewById(R.id.renewalFrequencySpinner)
@@ -98,6 +100,8 @@ class AddSubscriptionActivity : AppCompatActivity() {
     private fun saveSubscription() {
         val name = nameEditText.text.toString().trim()
         val amount = amountEditText.text.toString().toDoubleOrNull()
+        val remindDaysBefore = remindDaysBeforeEditText.text.toString().toInt()
+
         val category = categorySpinner.selectedItem.toString()
         val selectedFrequencyIndex = frequencySpinner.selectedItemPosition
         val (frequencyLabel, frequencyInDays, renewalsPerYear) = frequencyOptions.getOrNull(selectedFrequencyIndex) ?: Triple("Monthly", 30, 12)
@@ -126,7 +130,8 @@ class AddSubscriptionActivity : AppCompatActivity() {
             category = category,
             renewalsPerYear = renewalsPerYear,
             frequencyInDays = frequencyInDays,
-            nextPaymentDate = nextPaymentDate
+            nextPaymentDate = nextPaymentDate,
+            remindDaysBefore = remindDaysBefore
         )
 
         // Debug logging
