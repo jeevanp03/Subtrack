@@ -7,6 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import java.util.*
@@ -19,6 +20,8 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d("AlarmHelper", "Alarm was triggered at ${System.currentTimeMillis()}")
+
         createNotificationChannel(context)
 
         val db = SubscriptionDatabase.getDatabase(context)
@@ -55,7 +58,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                         .setSmallIcon(android.R.drawable.ic_dialog_info)
                         .setContentTitle("Upcoming Subscription")
-                        .setContentText("Payment for ${sub.name} is due in ${sub.remindDaysBefore} day(s).")
+                        .setContentText("Payment for ${sub.name} is due in ${sub.remindDaysBefore} ${if (sub.remindDaysBefore == 1) "day" else "days"}.")
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
                         .build()
 
