@@ -16,6 +16,8 @@
 
         <activity android:name=".AddSubscriptionActivity" android:exported="false"/>
 
+        <activity android:name=".ui.calendar.CalendarActivity" />
+
         <activity
             android:name=".HomeActivity"
             android:exported="true">
@@ -28,5 +30,7 @@
 
     </application>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
 </manifest>
