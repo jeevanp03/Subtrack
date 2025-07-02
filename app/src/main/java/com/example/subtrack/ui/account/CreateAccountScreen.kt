@@ -7,17 +7,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.subtrack.SubscriptionDatabase
+import kotlinx.coroutines.launch
 
 @Composable
 fun CreateAccountScreen(
-    onCreateAccount: (String, String) -> Unit,
-    onBackToLogin: () -> Unit // ✅ New callback
+    db: SubscriptionDatabase,
+    onBackToLogin: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var showConfirmation by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -67,7 +70,15 @@ fun CreateAccountScreen(
                     error = "Please fill in all fields"
                 } else {
                     error = null
-                    onCreateAccount(email, password)
+                    scope.launch {
+                        val existing = db.accountDao().getAccountByEmail(email)
+                        if (existing != null) {
+                            error = "Account already exists"
+                        } else {
+                            db.accountDao().insert(Account(email = email, password = password))
+                            showConfirmation = true
+                        }
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -77,25 +88,26 @@ fun CreateAccountScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ✅ Back to login button
         TextButton(
             onClick = onBackToLogin,
             modifier = Modifier.align(Alignment.End)
         ) {
             Text("Back to Login")
         }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun CreateAccountScreenPreview() {
-    CreateAccountScreen(
-        onCreateAccount = { email, password ->
-            println("Account created with: $email / $password")
-        },
-        onBackToLogin = {
-            println("Back to login clicked")
+        if (showConfirmation) {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("Account Created") },
+                text = { Text("Your account has been created successfully!") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showConfirmation = false
+                    }) {
+                        Text("OK")
+                    }
+                }
+            )
         }
-    )
+    }
 }

@@ -26,22 +26,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
+import kotlinx.coroutines.launch
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val db = SubscriptionDatabase.getDatabase(applicationContext)
+
         setContent {
             var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
+            var loggedInUserId by rememberSaveable { mutableStateOf<Long?>(null) }
+            val scope = rememberCoroutineScope()
 
             when (screenState) {
                 ScreenState.LOGIN -> {
                     LoginScreen(
-                        onLoginSuccess = {
-                            screenState = ScreenState.HOME
+                        onLogin = { email, password, onResult ->
+                            scope.launch {
+                                val account = db.accountDao().getAccountByEmail(email)
+                                if (account != null && account.password == password) {
+                                    loggedInUserId = account.id
+                                    onResult(true, account.id)
+                                    screenState = ScreenState.HOME
+                                } else {
+                                    onResult(false, null)
+                                }
+                            }
                         },
                         onNavigateToCreateAccount = {
                             screenState = ScreenState.CREATE_ACCOUNT
@@ -51,10 +66,7 @@ class HomeActivity : ComponentActivity() {
 
                 ScreenState.CREATE_ACCOUNT -> {
                     CreateAccountScreen(
-                        onCreateAccount = { email, password ->
-                            // TODO: Handle account creation logic here (e.g., Firebase/Auth API)
-                            screenState = ScreenState.HOME
-                        },
+                        db = db,
                         onBackToLogin = {
                             screenState = ScreenState.LOGIN
                         }
@@ -65,7 +77,11 @@ class HomeActivity : ComponentActivity() {
                     val viewModel = ViewModelProvider(this)[SubscriptionViewModel::class.java]
                     HomeScreen(
                         viewModel = viewModel,
-                        onLogout = { screenState = ScreenState.LOGIN }
+                        userId = loggedInUserId,
+                        onLogout = {
+                            loggedInUserId = null
+                            screenState = ScreenState.LOGIN
+                        }
                     )
                 }
             }
@@ -75,6 +91,7 @@ class HomeActivity : ComponentActivity() {
     @Composable
     fun HomeScreen(
         viewModel: SubscriptionViewModel,
+        userId: Long?,
         onLogout: () -> Unit
     ) {
         val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
