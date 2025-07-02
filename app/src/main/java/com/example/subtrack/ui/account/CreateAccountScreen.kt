@@ -77,6 +77,9 @@ fun CreateAccountScreen(
                         } else {
                             db.accountDao().insert(Account(email = email, password = password))
                             showConfirmation = true
+                            email = ""
+                            password = ""
+                            confirmPassword = ""
                         }
                     }
                 }
