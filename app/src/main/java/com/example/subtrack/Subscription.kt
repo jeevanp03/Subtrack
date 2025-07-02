@@ -13,5 +13,5 @@ data class Subscription(
     val renewalsPerYear: Int, // Kept for future use, not used in current calculations
     val frequencyInDays: Int = 30,  // Default to monthly (30 days)
     val nextPaymentDate: Long = System.currentTimeMillis(), // Store as timestamp
-    val remindDaysBefore: Int = 1
+    val remindDaysBefore: Int = 1 // How many days before the subscription payment date that the notification should trigger
 )

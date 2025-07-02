@@ -20,7 +20,7 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        Log.d("AlarmHelper", "Alarm was triggered at ${System.currentTimeMillis()}")
+        Log.d("AlarmHelper", "Subscrition Alarm was triggered at ${System.currentTimeMillis()}")
 
         createNotificationChannel(context)
 
