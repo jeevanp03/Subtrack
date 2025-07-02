@@ -97,7 +97,6 @@ class HomeActivity : ComponentActivity() {
         val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
         val context = LocalContext.current
 
-        // Refresh payment dates when the screen is first displayed
         LaunchedEffect(Unit) {
             viewModel.refreshPaymentDates()
             Log.d("HomeActivity", "Refreshed payment dates on startup")
