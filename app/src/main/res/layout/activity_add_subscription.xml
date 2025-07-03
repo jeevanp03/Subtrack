@@ -37,6 +37,16 @@
             android:layout_marginBottom="10dp"
             android:paddingStart="10dp"/>
 
+        <EditText
+            android:id="@+id/remindDaysBeforeEditText"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="How many days before payment would you like to be notified?"
+            android:background="@drawable/bg_edittext"
+            android:inputType="numberDecimal"
+            android:layout_marginBottom="10dp"
+            android:paddingStart="10dp"/>
+
         <Button
             android:id="@+id/dateButton"
             android:layout_width="match_parent"

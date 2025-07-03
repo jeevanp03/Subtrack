@@ -5,11 +5,17 @@ import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import com.example.subtrack.ui.calendar.CalendarUtils
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.util.*
 
 class AddSubscriptionActivity : AppCompatActivity() {
     private lateinit var nameEditText: EditText
     private lateinit var amountEditText: EditText
+    private lateinit var remindDaysBeforeEditText: EditText
     private lateinit var dateButton: Button
     private lateinit var categorySpinner: Spinner
     private lateinit var frequencySpinner: Spinner
@@ -37,11 +43,13 @@ class AddSubscriptionActivity : AppCompatActivity() {
 
         nameEditText = findViewById(R.id.nameEditText)
         amountEditText = findViewById(R.id.amountEditText)
+        remindDaysBeforeEditText = findViewById(R.id.remindDaysBeforeEditText)
         dateButton = findViewById(R.id.dateButton)
         categorySpinner = findViewById(R.id.categorySpinner)
         frequencySpinner = findViewById(R.id.renewalFrequencySpinner)
         saveButton = findViewById(R.id.saveButton)
 
+        requestCalendarPermissions()
         setupDatePicker()
         setupCategorySpinner()
         setupFrequencySpinner()
@@ -95,9 +103,26 @@ class AddSubscriptionActivity : AppCompatActivity() {
         frequencySpinner.adapter = adapter
     }
 
+    private fun requestCalendarPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR)
+            != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.WRITE_CALENDAR,
+                    Manifest.permission.READ_CALENDAR
+                ),
+                101 // your request code
+            )
+        }
+    }
+
     private fun saveSubscription() {
         val name = nameEditText.text.toString().trim()
         val amount = amountEditText.text.toString().toDoubleOrNull()
+        val remindDaysBefore = remindDaysBeforeEditText.text.toString().toInt()
+
         val category = categorySpinner.selectedItem.toString()
         val selectedFrequencyIndex = frequencySpinner.selectedItemPosition
         val (frequencyLabel, frequencyInDays, renewalsPerYear) = frequencyOptions.getOrNull(selectedFrequencyIndex) ?: Triple("Monthly", 30, 12)
@@ -126,7 +151,8 @@ class AddSubscriptionActivity : AppCompatActivity() {
             category = category,
             renewalsPerYear = renewalsPerYear,
             frequencyInDays = frequencyInDays,
-            nextPaymentDate = nextPaymentDate
+            nextPaymentDate = nextPaymentDate,
+            remindDaysBefore = remindDaysBefore
         )
 
         // Debug logging
@@ -135,6 +161,14 @@ class AddSubscriptionActivity : AppCompatActivity() {
 
         val viewModel = ViewModelProvider(this).get(SubscriptionViewModel::class.java)
         viewModel.insert(subscription)
+
+        CalendarUtils.insertRecurringEvent(
+            context = this,
+            title = "Payment: $name",
+            description = "Subscription due: $category - $$amount",
+            startTimeMillis = nextPaymentDate,
+            frequencyInDays = frequencyInDays
+        )
 
         // Show success message with next payment information
         val successMessage = "Subscription saved! Next payment: $nextPaymentDateFormatted (in $daysUntilPayment days)"

@@ -26,9 +26,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
+import kotlinx.coroutines.launch
 
 
 // --------------------------------------
@@ -39,15 +41,28 @@ import com.example.subtrack.ui.account.ScreenState
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Compose UI setup
+
+        val db = SubscriptionDatabase.getDatabase(applicationContext)
+
         setContent {
-            var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) } // Tracks which screen to show
-            // Basic navigation logic between screens
+            var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
+            var loggedInUserId by rememberSaveable { mutableStateOf<Long?>(null) }
+            val scope = rememberCoroutineScope()
+
             when (screenState) {
                 ScreenState.LOGIN -> {  // Show login screen
                     LoginScreen(
-                        onLoginSuccess = {
-                            screenState = ScreenState.HOME  // Navigate to home after successful login
+                        onLogin = { email, password, onResult ->
+                            scope.launch {
+                                val account = db.accountDao().getAccountByEmail(email)
+                                if (account != null && account.password == password) {
+                                    loggedInUserId = account.id
+                                    onResult(true, account.id)
+                                    screenState = ScreenState.HOME
+                                } else {
+                                    onResult(false, null)
+                                }
+                            }
                         },
                         onNavigateToCreateAccount = {
                             screenState = ScreenState.CREATE_ACCOUNT // Navigate to account creation screen
@@ -57,10 +72,7 @@ class HomeActivity : ComponentActivity() {
 
                 ScreenState.CREATE_ACCOUNT -> { // Show account creation screen
                     CreateAccountScreen(
-                        onCreateAccount = { email, password ->
-                            // TODO: Handle account creation logic here (e.g., Firebase/Auth API)
-                            screenState = ScreenState.HOME // Navigate to home after creating account
-                        },
+                        db = db,
                         onBackToLogin = {
                             screenState = ScreenState.LOGIN // Return to login screen
                         }
@@ -71,7 +83,11 @@ class HomeActivity : ComponentActivity() {
                     val viewModel = ViewModelProvider(this)[SubscriptionViewModel::class.java] // Get ViewModel instance
                     HomeScreen(
                         viewModel = viewModel,
-                        onLogout = { screenState = ScreenState.LOGIN } // Handle logout action
+                        userId = loggedInUserId,
+                        onLogout = {
+                            loggedInUserId = null
+                            screenState = ScreenState.LOGIN
+                        }
                     )
                 }
             }
@@ -84,12 +100,20 @@ class HomeActivity : ComponentActivity() {
     @Composable
     fun HomeScreen(
         viewModel: SubscriptionViewModel,
+        userId: Long?,
         onLogout: () -> Unit
     ) {
         val subscriptions by viewModel.subscriptions.collectAsState(emptyList())  // Observe subscription list from ViewModel
         val context = LocalContext.current  // Access current context for navigation
 
-        // Refresh payment dates when the screen is first displayed
+        var searchQuery by rememberSaveable { mutableStateOf("") }
+
+        val filteredSubscriptions = if (searchQuery.isBlank()) {
+            subscriptions
+        } else {
+            subscriptions.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
+
         LaunchedEffect(Unit) {
             viewModel.refreshPaymentDates()
             Log.d("HomeActivity", "Refreshed payment dates on startup")
@@ -121,27 +145,21 @@ class HomeActivity : ComponentActivity() {
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Row with Add Subscription and Calendar button
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Button(onClick = {
+                    Button(
+                        onClick = {
                             val intent = Intent(context, AddSubscriptionActivity::class.java)
                             context.startActivity(intent)
-                        }) {
-                            Text("Add Subscription")
-                        }
-
-                        Button(onClick = { /* TODO: Add navigation to Calendar */ }) {
-                            Text("View Calendar")
-                        }
+                        },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) {
+                        Text("Add Subscription")
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
-                        onClick = { onLogout() }
+                        onClick = { onLogout() },
+                        modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
                         Text("Logout")
                     }
@@ -169,9 +187,23 @@ class HomeActivity : ComponentActivity() {
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
+                        SubscriptionSearchBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it }
+                        )
                     }
-                    items(subscriptions.sortedBy { it.nextPaymentDate }) { sub ->
-                        SubscriptionItem(sub, viewModel)
+                    if (filteredSubscriptions.isEmpty()) {
+                        item {
+                            Text(
+                                text = "No results found.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                    } else {
+                        items(filteredSubscriptions.sortedBy { it.nextPaymentDate }) { sub ->
+                            SubscriptionItem(sub, viewModel)
+                        }
                     }
                 }
             }
@@ -271,7 +303,7 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
-
+    
     // --------------------------------------
     // ADD NAV BAR (Clickable/ minimlaist)
     // --------------------------------------
@@ -279,6 +311,22 @@ class HomeActivity : ComponentActivity() {
     // --------------------------------------
     // ADD SEARCH BAR (search subsciptions)
     // --------------------------------------
+    @Composable
+    fun SubscriptionSearchBar(
+        query: String,
+        onQueryChange: (String) -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = { Text("Search subscriptions...") },
+            singleLine = true,
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        )
+    }
 
     // --------------------------------------
     // NOTIFCATIONS BANNER (IE incoming payment...for snapchat)
