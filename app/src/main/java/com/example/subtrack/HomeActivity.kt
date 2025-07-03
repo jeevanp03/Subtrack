@@ -31,6 +31,7 @@ import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Menu
 
 
 // --------------------------------------
@@ -114,6 +115,8 @@ class HomeActivity : ComponentActivity() {
             subscriptions.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
 
+        var menuExpanded by remember { mutableStateOf(false) }
+
         LaunchedEffect(Unit) {
             viewModel.refreshPaymentDates()
             Log.d("HomeActivity", "Refreshed payment dates on startup")
@@ -139,29 +142,59 @@ class HomeActivity : ComponentActivity() {
                 )
             },
             bottomBar = {
-                Column(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(8.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            val intent = Intent(context, AddSubscriptionActivity::class.java)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth(0.6f)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Add Subscription")
-                    }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Button(
+                                onClick = {
+                                    val intent = Intent(context, AddSubscriptionActivity::class.java)
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth(0.6f)
+                            ) {
+                                Text("Add Subscription")
+                            }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                    Button(
-                        onClick = { onLogout() },
-                        modifier = Modifier.fillMaxWidth(0.6f)
-                    ) {
-                        Text("Logout")
+                            Button(
+                                onClick = { onLogout() },
+                                modifier = Modifier.fillMaxWidth(0.6f)
+                            ) {
+                                Text("Logout")
+                            }
+                        }
+
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Menu"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(onClick = { /* No-op */ }, text = { Text("Button 1") })
+                                DropdownMenuItem(onClick = { /* No-op */ }, text = { Text("Button 2") })
+                                DropdownMenuItem(onClick = { /* No-op */ }, text = { Text("Button 3") })
+                            }
+                        }
                     }
                 }
             }
