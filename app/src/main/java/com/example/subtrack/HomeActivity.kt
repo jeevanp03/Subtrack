@@ -127,26 +127,21 @@ class HomeActivity : ComponentActivity() {
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Button(onClick = {
+                    Button(
+                        onClick = {
                             val intent = Intent(context, AddSubscriptionActivity::class.java)
                             context.startActivity(intent)
-                        }) {
-                            Text("Add Subscription")
-                        }
-
-                        Button(onClick = { /* TODO: Add navigation to Calendar */ }) {
-                            Text("View Calendar")
-                        }
+                        },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) {
+                        Text("Add Subscription")
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
-                        onClick = { onLogout() }
+                        onClick = { onLogout() },
+                        modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
                         Text("Logout")
                     }

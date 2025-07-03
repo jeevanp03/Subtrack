@@ -5,6 +5,11 @@ import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import com.example.subtrack.ui.calendar.CalendarUtils
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.util.*
 
 class AddSubscriptionActivity : AppCompatActivity() {
@@ -44,6 +49,7 @@ class AddSubscriptionActivity : AppCompatActivity() {
         frequencySpinner = findViewById(R.id.renewalFrequencySpinner)
         saveButton = findViewById(R.id.saveButton)
 
+        requestCalendarPermissions()
         setupDatePicker()
         setupCategorySpinner()
         setupFrequencySpinner()
@@ -97,6 +103,21 @@ class AddSubscriptionActivity : AppCompatActivity() {
         frequencySpinner.adapter = adapter
     }
 
+    private fun requestCalendarPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR)
+            != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.WRITE_CALENDAR,
+                    Manifest.permission.READ_CALENDAR
+                ),
+                101 // your request code
+            )
+        }
+    }
+
     private fun saveSubscription() {
         val name = nameEditText.text.toString().trim()
         val amount = amountEditText.text.toString().toDoubleOrNull()
@@ -140,6 +161,14 @@ class AddSubscriptionActivity : AppCompatActivity() {
 
         val viewModel = ViewModelProvider(this).get(SubscriptionViewModel::class.java)
         viewModel.insert(subscription)
+
+        CalendarUtils.insertRecurringEvent(
+            context = this,
+            title = "Payment: $name",
+            description = "Subscription due: $category - $$amount",
+            startTimeMillis = nextPaymentDate,
+            frequencyInDays = frequencyInDays
+        )
 
         // Show success message with next payment information
         val successMessage = "Subscription saved! Next payment: $nextPaymentDateFormatted (in $daysUntilPayment days)"
