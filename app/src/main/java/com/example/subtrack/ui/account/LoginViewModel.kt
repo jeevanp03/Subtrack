@@ -11,15 +11,6 @@ class LoginViewModel : ViewModel() {
     var password by mutableStateOf("")
     var errorMessage by mutableStateOf<String?>(null)
 
-    fun onLoginClick(onSuccess: (String) -> Unit) {
-        if (email.isBlank() || password.isBlank()) {
-            errorMessage = "Please enter both email and password"
-        } else {
-            errorMessage = null
-            onSuccess(email)
-            clearFields()
-        }
-    }
     fun clearFields() {
         email = ""
         password = ""

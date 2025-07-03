@@ -7,38 +7,76 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.*
+import java.util.*
 
 class NotificationReceiver : BroadcastReceiver() {
 
     companion object {
-        const val CHANNEL_ID = "my_channel_id"
-        const val NOTIFICATION_ID = 1001
+        const val CHANNEL_ID = "subtrack_channel_id"
+        const val NOTIFICATION_ID_BASE = 1001
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d("AlarmHelper", "Subscrition Alarm was triggered at ${System.currentTimeMillis()}")
+
         createNotificationChannel(context)
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val notification = NotificationCompat.Builder(context, "subtrack_channel_id")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Subscription Reminder")
-            .setContentText("Don't forget to check your subscriptions!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
+        val db = SubscriptionDatabase.getDatabase(context)
+        val dao = db.subscriptionDao()
 
+        CoroutineScope(Dispatchers.IO).launch {
+            val now = Calendar.getInstance()
+            val todayStart = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val todayEnd = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 23)
+                set(Calendar.MINUTE, 59)
+                set(Calendar.SECOND, 59)
+                set(Calendar.MILLISECOND, 999)
+            }
 
-        notificationManager.notify(NOTIFICATION_ID, notification)
+            val dueSubscriptions = dao.getAllSync().filter { sub ->
+                val paymentDateCal = Calendar.getInstance().apply {
+                    timeInMillis = sub.nextPaymentDate
+                }
+                paymentDateCal.add(Calendar.DAY_OF_YEAR, -sub.remindDaysBefore)
+
+                paymentDateCal.timeInMillis in todayStart.timeInMillis..todayEnd.timeInMillis
+            }
+
+            if (dueSubscriptions.isNotEmpty()) {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+                dueSubscriptions.forEachIndexed { index, sub ->
+                    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(android.R.drawable.ic_dialog_info)
+                        .setContentTitle("Upcoming Subscription")
+                        .setContentText("Payment for ${sub.name} is due in ${sub.remindDaysBefore} ${if (sub.remindDaysBefore == 1) "day" else "days"}.")
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .build()
+
+                    notificationManager.notify(NOTIFICATION_ID_BASE + index, notification)
+                }
+            }
+        }
     }
+
 
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "My Notifications",
+                "SubTrack Notifications",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Channel for scheduled notifications"
+                description = "Notifications for upcoming subscription payments"
             }
             val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
