@@ -305,7 +305,7 @@ class HomeActivity : ComponentActivity() {
 
     
     // --------------------------------------
-    // ADD NAV BAR (Clickable/ minimlaist)
+    // ADD NAV BAR (Clickable/ minimlaist) /
     // --------------------------------------
 
     // --------------------------------------
