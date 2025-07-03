@@ -2,6 +2,10 @@
 
 package com.example.subtrack
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.remember
+
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
