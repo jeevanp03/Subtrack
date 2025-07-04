@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.example.subtrack.ui.account.Account
 import com.example.subtrack.ui.account.AccountDao
 
-@Database(entities = [Subscription::class, Account::class], version = 13)
+@Database(entities = [Subscription::class, Account::class], version = 15)
 abstract class SubscriptionDatabase : RoomDatabase() {
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun accountDao(): AccountDao

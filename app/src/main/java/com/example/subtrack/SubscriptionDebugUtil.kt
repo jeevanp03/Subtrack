@@ -18,9 +18,11 @@ object SubscriptionDebugUtil {
         Log.d(TAG, "Testing recurring date calculation:")
         Log.d(TAG, "  Start Date: $startDate")
         Log.d(TAG, "  Frequency: ${PaymentDateUtil.getFrequencyLabel(frequencyInDays)}")
-        
-        var currentDate = PaymentDateUtil.calculateNextPaymentDate(startDate, frequencyInDays)
-        
+
+        val startDateMillis = PaymentDateUtil.parseDateToMillis(startDate)
+        var currentDate = PaymentDateUtil.calculateNextPaymentDate(startDateMillis, frequencyInDays)
+
+
         for (i in 1..iterations) {
             val formattedDate = PaymentDateUtil.formatDateForDisplay(currentDate)
             Log.d(TAG, "  Payment $i: $formattedDate")

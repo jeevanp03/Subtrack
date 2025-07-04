@@ -2,11 +2,14 @@
 
 package com.example.subtrack
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
@@ -79,16 +83,25 @@ class HomeActivity : ComponentActivity() {
                     )
                 }
 
-                ScreenState.HOME -> { // Show main app screen
-                    val viewModel = ViewModelProvider(this)[SubscriptionViewModel::class.java] // Get ViewModel instance
-                    HomeScreen(
-                        viewModel = viewModel,
-                        userId = loggedInUserId,
-                        onLogout = {
-                            loggedInUserId = null
-                            screenState = ScreenState.LOGIN
+                ScreenState.HOME -> {
+                    loggedInUserId?.let { uid ->
+                        val viewModelFactory = remember(uid) {
+                            SubscriptionViewModelFactory(application, uid)
                         }
-                    )
+                        val viewModel: SubscriptionViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            key = "user_$uid",
+                            factory = viewModelFactory
+                        )
+
+                        HomeScreen(
+                            viewModel = viewModel,
+                            userId = uid,
+                            onLogout = {
+                                loggedInUserId = null
+                                screenState = ScreenState.LOGIN
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -103,8 +116,8 @@ class HomeActivity : ComponentActivity() {
         userId: Long?,
         onLogout: () -> Unit
     ) {
-        val subscriptions by viewModel.subscriptions.collectAsState(emptyList())  // Observe subscription list from ViewModel
-        val context = LocalContext.current  // Access current context for navigation
+        val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
+        val context = LocalContext.current
 
         var searchQuery by rememberSaveable { mutableStateOf("") }
 
@@ -114,25 +127,44 @@ class HomeActivity : ComponentActivity() {
             subscriptions.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
 
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.let { intent ->
+                    val subscription = Subscription(
+                        name = intent.getStringExtra("SUB_NAME") ?: "",
+                        amount = intent.getStringExtra("SUB_AMOUNT")?.toDoubleOrNull() ?: 0.0,
+                        date = intent.getStringExtra("SUB_DATE") ?: "",
+                        category = intent.getStringExtra("SUB_CATEGORY") ?: "",
+                        renewalsPerYear = intent.getIntExtra("SUB_RENEWALS", 12),
+                        frequencyInDays = intent.getIntExtra("SUB_FREQ_DAYS", 30),
+                        nextPaymentDate = intent.getLongExtra("SUB_NEXT_PAYMENT", System.currentTimeMillis()),
+                        remindDaysBefore = intent.getIntExtra("SUB_REMIND_BEFORE", 1),
+                        userId = userId ?: -1L
+                    )
+                    viewModel.insert(subscription)
+                }
+            }
+        }
+
         LaunchedEffect(Unit) {
             viewModel.refreshPaymentDates()
             Log.d("HomeActivity", "Refreshed payment dates on startup")
         }
-        // Scaffold provides Top Bar, Bottom Bar, and Content Layout
+
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text("Subtrak") },
                     actions = {
-                        // Debug button to clear database
                         IconButton(onClick = {
                             viewModel.clearAllData()
                             Log.d("HomeActivity", "Database cleared")
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = "Clear Database")
                         }
-                        // Placeholder for Profile functionality
-                        IconButton(onClick = { /* Profile action */ }) {   
+                        IconButton(onClick = { /* Future profile */ }) {
                             Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                         }
                     }
@@ -148,7 +180,8 @@ class HomeActivity : ComponentActivity() {
                     Button(
                         onClick = {
                             val intent = Intent(context, AddSubscriptionActivity::class.java)
-                            context.startActivity(intent)
+                            intent.putExtra("USER_ID", userId)
+                            launcher.launch(intent)  // ✅ Launch for result
                         },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
@@ -165,7 +198,6 @@ class HomeActivity : ComponentActivity() {
                     }
                 }
             }
-
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -209,6 +241,7 @@ class HomeActivity : ComponentActivity() {
             }
         }
     }
+
     // --------------------------------------
     // Renders details for a single subscription entry
     // --------------------------------------

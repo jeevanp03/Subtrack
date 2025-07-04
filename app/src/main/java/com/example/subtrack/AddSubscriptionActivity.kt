@@ -1,13 +1,14 @@
 package com.example.subtrack
 
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
 import com.example.subtrack.ui.calendar.CalendarUtils
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.util.*
@@ -38,7 +39,13 @@ class AddSubscriptionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_subscription)
 
-        // Enable the up button in the action bar
+        val userId = intent.getLongExtra("USER_ID", -1L)
+        if (userId == -1L) {
+            Toast.makeText(this, "User ID missing. Cannot save subscription.", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         nameEditText = findViewById(R.id.nameEditText)
@@ -55,17 +62,15 @@ class AddSubscriptionActivity : AppCompatActivity() {
         setupFrequencySpinner()
 
         saveButton.setOnClickListener {
-            saveSubscription()
+            saveSubscription(userId)
         }
 
-        // Add Cancel button logic
         val cancelButton = findViewById<Button>(R.id.cancelButton)
         cancelButton?.setOnClickListener {
             finish()
         }
     }
 
-    // Handle the up button press
     override fun onSupportNavigateUp(): Boolean {
         finish()
         return true
@@ -76,14 +81,15 @@ class AddSubscriptionActivity : AppCompatActivity() {
         dateButton.setOnClickListener {
             val datePicker = DatePickerDialog(this,
                 { _, year, month, day ->
-                    selectedDate = "$year-${month+1}-$day"
+                    selectedDate = "$year-${month + 1}-$day"
                     dateButton.text = selectedDate
                     calendar.set(year, month, day)
                     selectedStartDateMillis = calendar.timeInMillis
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH))
+                calendar.get(Calendar.DAY_OF_MONTH)
+            )
             datePicker.show()
         }
     }
@@ -105,27 +111,28 @@ class AddSubscriptionActivity : AppCompatActivity() {
 
     private fun requestCalendarPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
-
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(
                     Manifest.permission.WRITE_CALENDAR,
                     Manifest.permission.READ_CALENDAR
                 ),
-                101 // your request code
+                101
             )
         }
     }
 
-    private fun saveSubscription() {
+    private fun saveSubscription(userId: Long) {
         val name = nameEditText.text.toString().trim()
         val amount = amountEditText.text.toString().toDoubleOrNull()
-        val remindDaysBefore = remindDaysBeforeEditText.text.toString().toInt()
+        val remindDaysBefore = remindDaysBeforeEditText.text.toString().toIntOrNull() ?: 1
 
         val category = categorySpinner.selectedItem.toString()
         val selectedFrequencyIndex = frequencySpinner.selectedItemPosition
-        val (frequencyLabel, frequencyInDays, renewalsPerYear) = frequencyOptions.getOrNull(selectedFrequencyIndex) ?: Triple("Monthly", 30, 12)
+        val (frequencyLabel, frequencyInDays, renewalsPerYear) =
+            frequencyOptions.getOrNull(selectedFrequencyIndex) ?: Triple("Monthly", 30, 12)
 
         if (name.isEmpty() || amount == null || selectedDate.isEmpty()) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
@@ -137,31 +144,33 @@ class AddSubscriptionActivity : AppCompatActivity() {
             return
         }
 
-        // Calculate the next payment date based on the selected frequency
-        val nextPaymentDate = PaymentDateUtil.calculateNextPaymentDate(selectedDate, frequencyInDays)
-        
-        // Format the next payment date for display
+        val nextPaymentDate = PaymentDateUtil.calculateNextPaymentDate(
+            selectedStartDateMillis,
+            frequencyInDays
+        )
+
         val nextPaymentDateFormatted = PaymentDateUtil.formatDateForDisplay(nextPaymentDate)
         val daysUntilPayment = PaymentDateUtil.getDaysUntilPayment(nextPaymentDate)
 
-        val subscription = Subscription(
-            name = name,
-            amount = amount,
-            date = selectedDate,
-            category = category,
-            renewalsPerYear = renewalsPerYear,
-            frequencyInDays = frequencyInDays,
-            nextPaymentDate = nextPaymentDate,
-            remindDaysBefore = remindDaysBefore
-        )
-
-        // Debug logging
-        SubscriptionDebugUtil.logSubscriptionDetails(subscription)
         SubscriptionDebugUtil.testRecurringDateCalculation(selectedDate, frequencyInDays)
 
-        val viewModel = ViewModelProvider(this).get(SubscriptionViewModel::class.java)
-        viewModel.insert(subscription)
+        Log.d("DEBUG", "Returning subscription for userId: $userId")
 
+        // Return data to caller instead of inserting here
+        val resultIntent = Intent().apply {
+            putExtra("SUB_NAME", name)
+            putExtra("SUB_AMOUNT", amount.toString())
+            putExtra("SUB_DATE", selectedDate)
+            putExtra("SUB_CATEGORY", category)
+            putExtra("SUB_RENEWALS", renewalsPerYear)
+            putExtra("SUB_FREQ_DAYS", frequencyInDays)
+            putExtra("SUB_NEXT_PAYMENT", nextPaymentDate)
+            putExtra("SUB_REMIND_BEFORE", remindDaysBefore)
+        }
+
+        setResult(RESULT_OK, resultIntent)
+
+        // Optionally add calendar event (can still do this here)
         CalendarUtils.insertRecurringEvent(
             context = this,
             title = "Payment: $name",
@@ -170,9 +179,12 @@ class AddSubscriptionActivity : AppCompatActivity() {
             frequencyInDays = frequencyInDays
         )
 
-        // Show success message with next payment information
-        val successMessage = "Subscription saved! Next payment: $nextPaymentDateFormatted (in $daysUntilPayment days)"
-        Toast.makeText(this, successMessage, Toast.LENGTH_LONG).show()
+        Toast.makeText(
+            this,
+            "Subscription saved! Next payment: $nextPaymentDateFormatted (in $daysUntilPayment days)",
+            Toast.LENGTH_LONG
+        ).show()
+
         finish()
     }
 }

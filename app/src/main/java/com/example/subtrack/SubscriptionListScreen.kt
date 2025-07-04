@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
+fun SubscriptionListScreen(userId: Long, viewModel: SubscriptionViewModel = viewModel()) {
     val subscriptions by viewModel.subscriptions.collectAsState()
 
     var showDialog by remember { mutableStateOf(false) }
@@ -89,7 +89,8 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
                             amount = amount,
                             date = renewalDate,
                             category = category,
-                            renewalsPerYear = renewalsPerYear
+                            renewalsPerYear = renewalsPerYear,
+                            userId = userId
                         )
                     } else {
                         sub.copy(
@@ -97,7 +98,8 @@ fun SubscriptionListScreen(viewModel: SubscriptionViewModel = viewModel()) {
                             amount = amount,
                             date = renewalDate,
                             category = category,
-                            renewalsPerYear = renewalsPerYear
+                            renewalsPerYear = renewalsPerYear,
+                            userId = userId
                         )
                     }
                     viewModel.insert(subscription)

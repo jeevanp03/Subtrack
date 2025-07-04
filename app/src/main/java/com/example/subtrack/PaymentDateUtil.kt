@@ -1,29 +1,20 @@
 package com.example.subtrack
 
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object PaymentDateUtil {
-    fun calculateNextPaymentDate(startDate: String, frequencyInDays: Int): Long {
-        val calendar = Calendar.getInstance()
-        val startDateParts = startDate.split("-")
-        calendar.set(
-            startDateParts[0].toInt(),  // Year
-            startDateParts[1].toInt() - 1,  // Month (0-based)
-            startDateParts[2].toInt()  // Day
-        )
-        
-        val today = System.currentTimeMillis()
-        var nextDate = calendar.timeInMillis
-        
-        // Keep adding frequency until we find a date in the future
-        while (nextDate < today) {
-            nextDate = addFrequencyToDate(nextDate, frequencyInDays)
+    fun calculateNextPaymentDate(timestamp: Long, frequencyInDays: Int): Long {
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = timestamp
+            add(Calendar.DAY_OF_YEAR, frequencyInDays)
         }
-        
-        return nextDate
+        return calendar.timeInMillis
     }
-    
+
+
     fun calculateNextPaymentDateFromCurrent(currentPaymentDate: Long, frequencyInDays: Int): Long {
         return addFrequencyToDate(currentPaymentDate, frequencyInDays)
     }
@@ -102,4 +93,10 @@ object PaymentDateUtil {
             else -> "$frequencyInDays days"
         }
     }
+
+    fun parseDateToMillis(date: String): Long {
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return formatter.parse(date)?.time ?: System.currentTimeMillis()
+    }
+
 } 
