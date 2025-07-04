@@ -252,6 +252,9 @@ class HomeActivity : ComponentActivity() {
         val daysUntilPayment = PaymentDateUtil.getDaysUntilPayment(sub.nextPaymentDate)
         val isOverdue = PaymentDateUtil.isPaymentDatePassed(sub.nextPaymentDate)
 
+        var showMarkPaidDialog by remember { mutableStateOf(false) }
+        var showCancelDialog by remember { mutableStateOf(false) }
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -276,6 +279,7 @@ class HomeActivity : ComponentActivity() {
                         )
                     }
                 }
+
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Next Payment: $formattedDate")
                 Text(
@@ -284,18 +288,71 @@ class HomeActivity : ComponentActivity() {
                 )
                 Text("Amount: $${"%.2f".format(sub.amount)}")
                 Text("Frequency: $frequencyLabel")
-                if (!isOverdue) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { viewModel.markPaymentCompleted(sub.id) },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("Mark as Paid")
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    if (!isOverdue) {
+                        Button(
+                            onClick = { showMarkPaidDialog = true },
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Text("Mark as Paid")
+                        }
+                    }
+                    Button(onClick = { showCancelDialog = true }) {
+                        Text("Cancel")
                     }
                 }
             }
         }
+
+        // Mark as Paid confirmation
+        if (showMarkPaidDialog) {
+            AlertDialog(
+                onDismissRequest = { showMarkPaidDialog = false },
+                title = { Text("Mark as Paid") },
+                text = { Text("Are you sure you want to mark this subscription as paid for the upd=coming payment?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.markPaymentCompleted(sub.id)
+                        showMarkPaidDialog = false
+                    }) {
+                        Text("Yes")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showMarkPaidDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Cancel subscription confirmation
+        if (showCancelDialog) {
+            AlertDialog(
+                onDismissRequest = { showCancelDialog = false },
+                title = { Text("Cancel Subscription") },
+                text = { Text("Are you sure you want to cancel (delete) this subscription? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.delete(sub)
+                        showCancelDialog = false
+                    }) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCancelDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
+
+
     // --------------------------------------
     // Displays summary of all subscriptions grouped by frequency
     // --------------------------------------

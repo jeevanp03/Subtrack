@@ -80,6 +80,7 @@ fun CreateAccountScreen(
                             email = ""
                             password = ""
                             confirmPassword = ""
+                            onBackToLogin()
                         }
                     }
                 }
