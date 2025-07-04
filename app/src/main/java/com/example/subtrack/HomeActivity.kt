@@ -35,7 +35,8 @@ import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
 import kotlinx.coroutines.launch
-
+import android.widget.Toast
+import com.example.subtrack.ui.calendar.CalendarUtils
 
 // --------------------------------------
 // MAIN ACTIVITY: Entry point for Subtrak app
@@ -106,7 +107,7 @@ class HomeActivity : ComponentActivity() {
             }
         }
     }
-    
+
     // --------------------------------------
     // HOME SCREEN UI - Displays subscription list & actions
     // --------------------------------------
@@ -143,7 +144,9 @@ class HomeActivity : ComponentActivity() {
                         remindDaysBefore = intent.getIntExtra("SUB_REMIND_BEFORE", 1),
                         userId = userId ?: -1L
                     )
+
                     viewModel.insert(subscription)
+                    Log.d("HomeActivity", "Inserted subscription: ${subscription.name}")
                 }
             }
         }
@@ -393,7 +396,7 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
-    
+
     // --------------------------------------
     // ADD NAV BAR (Clickable/ minimlaist)
     // --------------------------------------

@@ -51,17 +51,7 @@ object CalendarUtils {
             put(CalendarContract.Events.DESCRIPTION, description)
             put(CalendarContract.Events.CALENDAR_ID, calendarId)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
-
-            val interval = when (frequencyInDays) {
-                7 -> "WEEKLY"
-                14 -> "WEEKLY;INTERVAL=2"
-                30 -> "MONTHLY"
-                90 -> "MONTHLY;INTERVAL=3"
-                180 -> "MONTHLY;INTERVAL=6"
-                365 -> "YEARLY"
-                else -> "MONTHLY"
-            }
-            put(CalendarContract.Events.RRULE, "FREQ=$interval;COUNT=60")
+            put(CalendarContract.Events.RRULE, rrule)
         }
 
         val uri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)

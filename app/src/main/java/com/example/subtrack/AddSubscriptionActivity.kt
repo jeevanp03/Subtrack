@@ -175,7 +175,7 @@ class AddSubscriptionActivity : AppCompatActivity() {
             context = this,
             title = "Payment: $name",
             description = "Subscription due: $category - $$amount",
-            startTimeMillis = nextPaymentDate,
+            startTimeMillis = selectedStartDateMillis,
             frequencyInDays = frequencyInDays
         )
 
