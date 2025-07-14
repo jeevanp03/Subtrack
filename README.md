@@ -1,7 +1,7 @@
 # Subtrack
 
 ## Project Description
-Subtrack is a project designed to [brief description of the project's purpose and goals].
+Subtrack is a project designed to help people manage their subscriptions by notifying them when they're due, integrating with their calendars, and providing some aggregated stats
 
 ## Project Members
 - Adriel
