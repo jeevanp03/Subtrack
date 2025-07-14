@@ -15,6 +15,7 @@ Subtrack is a project designed to [brief description of the project's purpose an
 
 | Start Date | Task                       | Arkhan | Marc | Victor | Jeevan | Adriel | Jojo |
 |------------|----------------------------|--------|------|--------|--------|--------|------|
+| 2025-06-10 | Jira Setup                 | 0      | 0    | 0      | 0      | 1      | 0    |
 | 2025-06-10 | Repo Setup                 | 1      | 1    | 1      | 1      | 1      | 1    |
 | 2025-06-10 | Environment Setup          | 0      | 0    | 0      | 1      | 0      | 0    |
 | 2025-06-15 | Repo Cleanup               | 1      | 0    | 0      | 1      | 0      | 0    |
