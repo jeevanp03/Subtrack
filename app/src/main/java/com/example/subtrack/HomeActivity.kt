@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
@@ -273,7 +274,20 @@ class HomeActivity : FragmentActivity() {
                         Text("Add Subscription")
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = {
+                            val intent = Intent(context, ChatBotActivity::class.java)
+                            intent.putExtra("USER_ID", userId)
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) {
+                        Text("💰 Financial Assistant")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
                         onClick = { onLogout() },
@@ -549,7 +563,7 @@ class HomeActivity : FragmentActivity() {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
             )
             
             ExposedDropdownMenu(
@@ -634,7 +648,7 @@ class HomeActivity : FragmentActivity() {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
             )
             
             ExposedDropdownMenu(
@@ -680,7 +694,7 @@ class HomeActivity : FragmentActivity() {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
             )
             
             ExposedDropdownMenu(
@@ -726,7 +740,7 @@ class HomeActivity : FragmentActivity() {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
             )
             
             ExposedDropdownMenu(
