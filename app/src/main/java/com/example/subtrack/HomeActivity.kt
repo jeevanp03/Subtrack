@@ -17,13 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
@@ -121,12 +130,58 @@ class HomeActivity : ComponentActivity() {
         val context = LocalContext.current
 
         var searchQuery by rememberSaveable { mutableStateOf("") }
+        var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
+        var selectedAmountRange by rememberSaveable { mutableStateOf<AmountRange?>(null) }
+        var selectedPaymentStatus by rememberSaveable { mutableStateOf<PaymentStatus?>(null) }
+        var sortOrder by rememberSaveable { mutableStateOf(SortOrder.NEXT_PAYMENT) }
 
-        val filteredSubscriptions = if (searchQuery.isBlank()) {
-            subscriptions
-        } else {
-            subscriptions.filter { it.name.contains(searchQuery, ignoreCase = true) }
-        }
+        // Get unique categories for filter chips
+        val categories = subscriptions.map { it.category }.distinct().sorted()
+
+        // Filter and sort subscriptions
+        val filteredSubscriptions = subscriptions
+            .filter { subscription ->
+                // Search filter
+                val matchesSearch = searchQuery.isBlank() || 
+                    subscription.name.contains(searchQuery, ignoreCase = true) ||
+                    subscription.category.contains(searchQuery, ignoreCase = true) ||
+                    subscription.amount.toString().contains(searchQuery)
+
+                // Category filter
+                val matchesCategory = selectedCategory == null || subscription.category == selectedCategory
+
+                // Amount range filter
+                val matchesAmountRange = when (selectedAmountRange) {
+                    AmountRange.LOW -> subscription.amount < 10.0
+                    AmountRange.MEDIUM -> subscription.amount >= 10.0 && subscription.amount < 50.0
+                    AmountRange.HIGH -> subscription.amount >= 50.0
+                    null -> true
+                }
+
+                // Payment status filter
+                val matchesPaymentStatus = when (selectedPaymentStatus) {
+                    PaymentStatus.OVERDUE -> PaymentDateUtil.isPaymentDatePassed(subscription.nextPaymentDate)
+                    PaymentStatus.DUE_SOON -> {
+                        val daysUntil = PaymentDateUtil.getDaysUntilPayment(subscription.nextPaymentDate)
+                        daysUntil <= 7 && daysUntil > 0
+                    }
+                    PaymentStatus.ACTIVE -> {
+                        val daysUntil = PaymentDateUtil.getDaysUntilPayment(subscription.nextPaymentDate)
+                        daysUntil > 7
+                    }
+                    null -> true
+                }
+
+                matchesSearch && matchesCategory && matchesAmountRange && matchesPaymentStatus
+            }
+            .let { filtered ->
+                when (sortOrder) {
+                    SortOrder.NAME -> filtered.sortedBy { it.name }
+                    SortOrder.AMOUNT -> filtered.sortedBy { it.amount }
+                    SortOrder.NEXT_PAYMENT -> filtered.sortedBy { it.nextPaymentDate }
+                    SortOrder.CATEGORY -> filtered.sortedBy { it.category }
+                }
+            }
 
         val launcher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
@@ -214,7 +269,7 @@ class HomeActivity : ComponentActivity() {
                 ) {
                     item {
                         MonthlyOverview(subscriptions)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                     item {
                         Text(
@@ -222,21 +277,42 @@ class HomeActivity : ComponentActivity() {
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
+                        
+                        // Search bar
                         SubscriptionSearchBar(
                             query = searchQuery,
                             onQueryChange = { searchQuery = it }
                         )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        // Collapsible filter section
+                        CollapsibleFilterSection(
+                            categories = categories,
+                            selectedCategory = selectedCategory,
+                            onCategoryChange = { selectedCategory = it },
+                            selectedAmountRange = selectedAmountRange,
+                            onAmountRangeChange = { selectedAmountRange = it },
+                            selectedPaymentStatus = selectedPaymentStatus,
+                            onPaymentStatusChange = { selectedPaymentStatus = it },
+                            currentSort = sortOrder,
+                            onSortChange = { sortOrder = it },
+                            filteredCount = filteredSubscriptions.size,
+                            totalCount = subscriptions.size
+                        )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
                     if (filteredSubscriptions.isEmpty()) {
                         item {
                             Text(
-                                text = "No results found.",
+                                text = if (subscriptions.isEmpty()) "No subscriptions yet. Add your first subscription!" else "No results found.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(vertical = 16.dp)
                             )
                         }
                     } else {
-                        items(filteredSubscriptions.sortedBy { it.nextPaymentDate }) { sub ->
+                        items(filteredSubscriptions) { sub ->
                             SubscriptionItem(sub, viewModel)
                         }
                     }
@@ -261,10 +337,10 @@ class HomeActivity : ComponentActivity() {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
+                .padding(vertical = 2.dp),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,7 +359,7 @@ class HomeActivity : ComponentActivity() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text("Next Payment: $formattedDate")
                 Text(
                     text = if (isOverdue) "Overdue by ${-daysUntilPayment} days" else "Due in $daysUntilPayment days",
@@ -292,7 +368,7 @@ class HomeActivity : ComponentActivity() {
                 Text("Amount: $${"%.2f".format(sub.amount)}")
                 Text("Frequency: $frequencyLabel")
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     if (!isOverdue) {
@@ -315,7 +391,7 @@ class HomeActivity : ComponentActivity() {
             AlertDialog(
                 onDismissRequest = { showMarkPaidDialog = false },
                 title = { Text("Mark as Paid") },
-                text = { Text("Are you sure you want to mark this subscription as paid for the upd=coming payment?") },
+                text = { Text("Are you sure you want to mark this subscription as paid for the upcoming payment?") },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.markPaymentCompleted(sub.id)
@@ -372,20 +448,20 @@ class HomeActivity : ComponentActivity() {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            elevation = CardDefaults.cardElevation(8.dp)
+                .padding(vertical = 4.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = "Monthly Overview",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text("Total Subscriptions: ${subscriptions.size}")
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text("Recurring Cost:")
 
@@ -417,8 +493,374 @@ class HomeActivity : ComponentActivity() {
             singleLine = true,
             modifier = modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = 4.dp)
         )
+    }
+
+    // --------------------------------------
+    // SORT OPTIONS
+    // --------------------------------------
+    @Composable
+    fun SortOptions(
+        currentSort: SortOrder,
+        onSortChange: (SortOrder) -> Unit
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            OutlinedTextField(
+                value = currentSort.displayName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Sort by") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                SortOrder.values().forEach { sortOrder ->
+                    DropdownMenuItem(
+                        text = { Text(sortOrder.displayName) },
+                        onClick = {
+                            onSortChange(sortOrder)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // --------------------------------------
+    // FILTER CHIPS
+    // --------------------------------------
+    @Composable
+    fun FilterChips(
+        categories: List<String>,
+        selectedCategory: String?,
+        onCategoryChange: (String?) -> Unit,
+        selectedAmountRange: AmountRange?,
+        onAmountRangeChange: (AmountRange?) -> Unit,
+        selectedPaymentStatus: PaymentStatus?,
+        onPaymentStatusChange: (PaymentStatus?) -> Unit
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // Category filters
+            if (categories.isNotEmpty()) {
+                CategoryDropdown(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    onCategoryChange = onCategoryChange
+                )
+            }
+
+            // Amount range filters
+            AmountRangeDropdown(
+                selectedAmountRange = selectedAmountRange,
+                onAmountRangeChange = onAmountRangeChange
+            )
+
+            // Payment status filters
+            PaymentStatusDropdown(
+                selectedPaymentStatus = selectedPaymentStatus,
+                onPaymentStatusChange = onPaymentStatusChange
+            )
+        }
+    }
+
+    // --------------------------------------
+    // INDIVIDUAL DROPDOWN COMPONENTS
+    // --------------------------------------
+    @Composable
+    fun CategoryDropdown(
+        categories: List<String>,
+        selectedCategory: String?,
+        onCategoryChange: (String?) -> Unit
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            OutlinedTextField(
+                value = selectedCategory ?: "Any category",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Category") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Any category") },
+                    onClick = {
+                        onCategoryChange(null)
+                        expanded = false
+                    }
+                )
+                categories.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            onCategoryChange(category)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun AmountRangeDropdown(
+        selectedAmountRange: AmountRange?,
+        onAmountRangeChange: (AmountRange?) -> Unit
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            OutlinedTextField(
+                value = selectedAmountRange?.displayName ?: "Any amount",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Monthly cost") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Any amount") },
+                    onClick = {
+                        onAmountRangeChange(null)
+                        expanded = false
+                    }
+                )
+                AmountRange.values().forEach { range ->
+                    DropdownMenuItem(
+                        text = { Text(range.displayName) },
+                        onClick = {
+                            onAmountRangeChange(range)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun PaymentStatusDropdown(
+        selectedPaymentStatus: PaymentStatus?,
+        onPaymentStatusChange: (PaymentStatus?) -> Unit
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            OutlinedTextField(
+                value = selectedPaymentStatus?.displayName ?: "Any status",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Payment due") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Any status") },
+                    onClick = {
+                        onPaymentStatusChange(null)
+                        expanded = false
+                    }
+                )
+                PaymentStatus.values().forEach { status ->
+                    DropdownMenuItem(
+                        text = { Text(status.displayName) },
+                        onClick = {
+                            onPaymentStatusChange(status)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // --------------------------------------
+    // COLLAPSIBLE FILTER SECTION
+    // --------------------------------------
+    @Composable
+    fun CollapsibleFilterSection(
+        categories: List<String>,
+        selectedCategory: String?,
+        onCategoryChange: (String?) -> Unit,
+        selectedAmountRange: AmountRange?,
+        onAmountRangeChange: (AmountRange?) -> Unit,
+        selectedPaymentStatus: PaymentStatus?,
+        onPaymentStatusChange: (PaymentStatus?) -> Unit,
+        currentSort: SortOrder,
+        onSortChange: (SortOrder) -> Unit,
+        filteredCount: Int,
+        totalCount: Int
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        
+        Column {
+            // Filter toggle button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Filters & Sort",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                    )
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    // Show active filter count
+                    val activeFilters = listOfNotNull(
+                        selectedCategory,
+                        selectedAmountRange?.displayName,
+                        selectedPaymentStatus?.displayName
+                    ).size
+                    
+                    if (activeFilters > 0) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            ),
+                            modifier = Modifier.height(20.dp)
+                        ) {
+                            Text(
+                                text = "$activeFilters",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // Results count
+                Text(
+                    text = "$filteredCount of $totalCount",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                // Expand/collapse icon
+                Icon(
+                    imageVector = if (expanded) 
+                        androidx.compose.material.icons.Icons.Default.KeyboardArrowUp 
+                    else 
+                        androidx.compose.material.icons.Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse filters" else "Expand filters",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Collapsible content
+            AnimatedVisibility(
+                visible = expanded,
+                enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Sort options
+                    SortOptions(
+                        currentSort = currentSort,
+                        onSortChange = onSortChange
+                    )
+                    
+                    // Filter options
+                    FilterChips(
+                        categories = categories,
+                        selectedCategory = selectedCategory,
+                        onCategoryChange = onCategoryChange,
+                        selectedAmountRange = selectedAmountRange,
+                        onAmountRangeChange = onAmountRangeChange,
+                        selectedPaymentStatus = selectedPaymentStatus,
+                        onPaymentStatusChange = onPaymentStatusChange
+                    )
+                }
+            }
+        }
+    }
+
+    // --------------------------------------
+    // ENUM CLASSES FOR FILTERING AND SORTING
+    // --------------------------------------
+    enum class SortOrder(val displayName: String) {
+        NAME("Name"),
+        AMOUNT("Amount"),
+        NEXT_PAYMENT("Next Payment"),
+        CATEGORY("Category")
+    }
+
+    enum class AmountRange(val displayName: String) {
+        LOW("$0.00 - $9.99"),
+        MEDIUM("$10.00 - $49.99"),
+        HIGH("$50.00+")
+    }
+
+    enum class PaymentStatus(val displayName: String) {
+        OVERDUE("Overdue"),
+        DUE_SOON("Due in 7 days"),
+        ACTIVE("Due later")
     }
 
     // --------------------------------------
