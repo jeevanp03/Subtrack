@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.material3.*
@@ -37,13 +38,14 @@ import com.example.subtrack.ui.account.ScreenState
 import kotlinx.coroutines.launch
 import android.widget.Toast
 import com.example.subtrack.ui.calendar.CalendarUtils
+import com.example.subtrack.BiometricAuthHelper
 
 // --------------------------------------
 // MAIN ACTIVITY: Entry point for Subtrak app
 // Manages Login, Account Creation, and Home screens
 // --------------------------------------
 
-class HomeActivity : ComponentActivity() {
+class HomeActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -53,6 +55,9 @@ class HomeActivity : ComponentActivity() {
             var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
             var loggedInUserId by rememberSaveable { mutableStateOf<Long?>(null) }
             val scope = rememberCoroutineScope()
+            
+            // Initialize biometric auth helper
+            val biometricAuthHelper = remember { BiometricAuthHelper(applicationContext) }
 
             when (screenState) {
                 ScreenState.LOGIN -> {  // Show login screen
@@ -71,6 +76,28 @@ class HomeActivity : ComponentActivity() {
                         },
                         onNavigateToCreateAccount = {
                             screenState = ScreenState.CREATE_ACCOUNT // Navigate to account creation screen
+                        },
+                        onBiometricLogin = {
+                            if (biometricAuthHelper.isBiometricAvailable()) {
+                                biometricAuthHelper.showBiometricPrompt(
+                                    activity = this@HomeActivity,
+                                    onSuccess = {
+                                        // For demo purposes, we'll use a default user ID
+                                        // In a real app, you'd store the user ID securely and retrieve it here
+                                        loggedInUserId = 1L
+                                        screenState = ScreenState.HOME
+                                        Toast.makeText(applicationContext, "Biometric authentication successful!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onError = { error ->
+                                        Toast.makeText(applicationContext, "Biometric error: $error", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onFailed = {
+                                        Toast.makeText(applicationContext, "Biometric authentication failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            } else {
+                                Toast.makeText(applicationContext, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     )
                 }

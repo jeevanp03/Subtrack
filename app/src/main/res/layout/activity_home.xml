@@ -84,7 +84,7 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:src="@android:drawable/ic_menu_info_details"
-                            android:tint="@color/purple_700"
+                            app:tint="@color/purple_700"
                             android:layout_marginEnd="12dp"/>
 
                         <LinearLayout
@@ -148,7 +148,7 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:src="@android:drawable/ic_menu_agenda"
-                            android:tint="@color/teal_700"
+                            app:tint="@color/teal_700"
                             android:layout_marginEnd="12dp"/>
 
                         <LinearLayout
@@ -199,7 +199,7 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:src="@android:drawable/ic_menu_manage"
-                            android:tint="@color/white"
+                            app:tint="@color/white"
                             android:layout_marginEnd="12dp"/>
 
                         <LinearLayout
