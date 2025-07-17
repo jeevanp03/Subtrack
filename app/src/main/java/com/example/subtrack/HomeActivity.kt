@@ -470,13 +470,11 @@ class HomeActivity : FragmentActivity() {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    if (!isOverdue) {
-                        Button(
-                            onClick = { showMarkPaidDialog = true },
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Text("Mark as Paid")
-                        }
+                    Button(
+                        onClick = { showMarkPaidDialog = true },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("Mark as Paid")
                     }
                     Button(onClick = { showCancelDialog = true }) {
                         Text("Cancel")

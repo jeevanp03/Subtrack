@@ -13,4 +13,16 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
     </style>
+    <style name="ThemeOverlay.Subtrack.DatePicker" parent="ThemeOverlay.Material3.MaterialCalendar">
+        <item name="materialCalendarStyle">@style/Widget.Material3.MaterialCalendar</item>
+        <item name="materialCalendarTheme">@style/CustomDatePickerTheme</item>
+    </style>
+
+    <style name="CustomDatePickerTheme" parent="Theme.Material3.DayNight.Dialog">
+        <item name="colorPrimary">@color/subtrack_primary</item>
+        <item name="colorOnPrimary">@color/subtrack_on_primary</item>
+        <item name="colorSurface">@color/subtrack_surface</item>
+        <item name="colorOnSurface">@color/subtrack_on_surface</item>
+    </style>
+
 </resources>

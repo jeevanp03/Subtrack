@@ -12,4 +12,9 @@
     <color name="buttonText">#FFFFFF</color>
     <color name="backgroundGrey">#FAFAFA</color>
     <color name="cardShadow">#33000000</color>
+    <color name="subtrack_primary">#6650A4</color>
+    <color name="subtrack_on_primary">#FFFFFF</color>
+    <color name="subtrack_surface">#FFFFFF</color>
+    <color name="subtrack_on_surface">#000000</color>
+
 </resources>

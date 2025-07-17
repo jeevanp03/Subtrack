@@ -3,4 +3,10 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+    <style name="SubtrackDatePickerTheme" parent="Theme.Material3.DayNight.Dialog">
+        <item name="colorPrimary">@color/subtrack_primary</item>
+        <item name="colorOnPrimary">@color/subtrack_on_primary</item>
+        <item name="colorSurface">@color/subtrack_surface</item>
+        <item name="colorOnSurface">@color/subtrack_on_surface</item>
+    </style>
 </resources> 

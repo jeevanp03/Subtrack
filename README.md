@@ -31,3 +31,11 @@ Subtrack is a project designed to help people manage their subscriptions by noti
 | 2026-07-03 | Home Page Redo             | 0      | 0    | 0      | 0      | 2      | 0    |
 | 2026-07-04 | Separating Account Info    | 0      | 3    | 1      | 0      | 0      | 0    |
 | 2026-07-07 | Subscription Form Update   | 0.5    | 0    | 0      | 0      | 0      | 0    |
+| 2026-07-16 | Biometric Authentication   | 0      | 0    | 2      | 0      | 0      | 0    |
+| 2026-07-16 | Monthly Insights Graph     | 0      | 0    | 0      | 0      | 0      | 2    |
+| 2026-07-16 | AI Chatbot                 | 0      | 0    | 0      | 2      | 0      | 0    |
+| 2026-07-16 | Filtering                  | 2      | 0    | 0      | 0      | 0      | 0    |
+| 2026-07-16 | UI - Home page             | 0      | 2    | 0      | 0      | 0      | 0    |
+| 2026-07-17 | UI - Add Subscriptions     | 0      | 1    | 0      | 0      | 0      | 0    |
+
+
