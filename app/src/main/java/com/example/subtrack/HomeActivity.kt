@@ -57,6 +57,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.nativeCanvas
 import com.example.subtrack.ui.theme.SubtrackTheme
+import androidx.compose.ui.text.style.TextAlign
 
 // --------------------------------------
 // MAIN ACTIVITY: Entry point for Subtrak app
@@ -72,7 +73,7 @@ class HomeActivity : FragmentActivity() {
         setContent {
             SubtrackTheme {
                 // Initialize biometric auth helper
-                val biometricAuthHelper = remember { BiometricAuthHelper(applicationContext)}
+                val biometricAuthHelper = remember { BiometricAuthHelper(applicationContext) }
                 var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
                 var loggedInUserId by rememberSaveable { mutableStateOf<Long?>(null) }
                 val scope = rememberCoroutineScope()
@@ -204,7 +205,8 @@ class HomeActivity : FragmentActivity() {
                         subscription.amount.toString().contains(searchQuery)
 
                 // Category filter
-                val matchesCategory = selectedCategory == null || subscription.category == selectedCategory
+                val matchesCategory =
+                    selectedCategory == null || subscription.category == selectedCategory
 
                 // Amount range filter
                 val matchesAmountRange = when (selectedAmountRange) {
@@ -218,13 +220,17 @@ class HomeActivity : FragmentActivity() {
                 val matchesPaymentStatus = when (selectedPaymentStatus) {
                     PaymentStatus.OVERDUE -> PaymentDateUtil.isPaymentDatePassed(subscription.nextPaymentDate)
                     PaymentStatus.DUE_SOON -> {
-                        val daysUntil = PaymentDateUtil.getDaysUntilPayment(subscription.nextPaymentDate)
+                        val daysUntil =
+                            PaymentDateUtil.getDaysUntilPayment(subscription.nextPaymentDate)
                         daysUntil <= 7 && daysUntil > 0
                     }
+
                     PaymentStatus.ACTIVE -> {
-                        val daysUntil = PaymentDateUtil.getDaysUntilPayment(subscription.nextPaymentDate)
+                        val daysUntil =
+                            PaymentDateUtil.getDaysUntilPayment(subscription.nextPaymentDate)
                         daysUntil > 7
                     }
+
                     null -> true
                 }
 
@@ -601,26 +607,39 @@ class HomeActivity : FragmentActivity() {
                         .size(150.dp)
                         .align(Alignment.CenterHorizontally)
                 ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        var startAngle = -90f
-
-                        categories.forEachIndexed { index, category ->
-                            val cost = categoryCostMap[category] ?: 0.0
-                            val sweepAngle = if (totalCost > 0)
-                                (cost.toFloat() / totalCost.toFloat()) * 360f
-                            else 0f
-
-                            drawArc(
-                                color = colors[index],
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle,
-                                useCenter = true,
-                                topLeft = Offset.Zero,
-                                size = Size(size.width, size.height)
+                    if (subscriptions.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Add subscriptions to view this chart",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
                             )
-                            startAngle += sweepAngle
                         }
-                    }
+                    } else {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            var startAngle = -90f
+
+                            categories.forEachIndexed { index, category ->
+                                val cost = categoryCostMap[category] ?: 0.0
+                                val sweepAngle = if (totalCost > 0)
+                                    (cost.toFloat() / totalCost.toFloat()) * 360f
+                                else 0f
+
+                                drawArc(
+                                    color = colors[index],
+                                    startAngle = startAngle,
+                                    sweepAngle = sweepAngle,
+                                    useCenter = true,
+                                    topLeft = Offset.Zero,
+                                    size = Size(size.width, size.height)
+                                )
+                                startAngle += sweepAngle
+                            }
+                        }
 
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         var startAngle = -90f
@@ -633,9 +652,12 @@ class HomeActivity : FragmentActivity() {
                             else 0f
 
                             if (sweepAngle > 0f) {
-                                val medianAngleRad = Math.toRadians((startAngle + sweepAngle / 2).toDouble())
-                                val textX = (size.width / 2 + radius * kotlin.math.cos(medianAngleRad)).toFloat()
-                                val textY = (size.height / 2 + radius * kotlin.math.sin(medianAngleRad)).toFloat()
+                                val medianAngleRad =
+                                    Math.toRadians((startAngle + sweepAngle / 2).toDouble())
+                                val textX =
+                                    (size.width / 2 + radius * kotlin.math.cos(medianAngleRad)).toFloat()
+                                val textY =
+                                    (size.height / 2 + radius * kotlin.math.sin(medianAngleRad)).toFloat()
 
                                 drawContext.canvas.nativeCanvas.apply {
                                     drawText(
@@ -658,7 +680,7 @@ class HomeActivity : FragmentActivity() {
             }
         }
     }
-
+}
     // --------------------------------------
     // ADD NAV BAR (Clickable/ minimlaist)
     // --------------------------------------
