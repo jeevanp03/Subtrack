@@ -511,12 +511,12 @@ class HomeActivity : FragmentActivity() {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 1.dp),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(5.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -530,7 +530,7 @@ class HomeActivity : FragmentActivity() {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(200.dp)
+                        .size(150.dp)
                         .align(Alignment.CenterHorizontally)
                 ) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
