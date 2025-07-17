@@ -5,14 +5,24 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.text.NumberFormat
 import java.util.Locale
+import android.util.Log
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 class ChatBotService {
     private val api: HuggingFaceApi
 
     init {
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .build()
+            
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api-inference.huggingface.co/")
             .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClient)
             .build()
         
         api = retrofit.create(HuggingFaceApi::class.java)
@@ -21,7 +31,8 @@ class ChatBotService {
     suspend fun generateFinancialAdvice(
         userMessage: String,
         userSubscriptions: List<Subscription>,
-        userEmail: String
+        userEmail: String,
+        conversationHistory: List<com.example.subtrack.ChatMessage> = emptyList()
     ): String {
         val totalMonthlySpending = userSubscriptions.sumOf { it.amount }
         val subscriptionCategories = userSubscriptions.groupBy { it.category }
@@ -30,14 +41,136 @@ class ChatBotService {
         }
         val userName = userEmail.substringBefore("@").replaceFirstChar { it.uppercase() }
         
-        // Use intelligent local analysis instead of external API
-        return generateIntelligentAdvice(
+        return try {
+            // Try using HuggingFace LLM first
+            generateLLMResponse(
+                userMessage,
+                totalMonthlySpending,
+                categorySpending,
+                userSubscriptions,
+                userName,
+                conversationHistory
+            )
+        } catch (e: Exception) {
+            // Log the error for debugging
+            Log.w("ChatBotService", "LLM failed, using fallback: ${e.message}")
+            
+            // Fallback to local analysis if LLM fails
+            generateIntelligentAdvice(
+                userMessage,
+                totalMonthlySpending,
+                categorySpending,
+                userSubscriptions,
+                userName,
+                conversationHistory
+            )
+        }
+    }
+
+    private suspend fun generateLLMResponse(
+        userMessage: String,
+        totalMonthlySpending: Double,
+        categorySpending: Map<String, Double>,
+        userSubscriptions: List<Subscription>,
+        userName: String,
+        conversationHistory: List<com.example.subtrack.ChatMessage> = emptyList()
+    ): String {
+        val formatter = NumberFormat.getCurrencyInstance(Locale.US)
+        
+        // Build context for the LLM
+        val context = buildLLMContext(
             userMessage,
             totalMonthlySpending,
             categorySpending,
-            userSubscriptions,
-            userName
+            userSubscriptions.size,
+            userName,
+            conversationHistory,
+            formatter
         )
+        
+        // Use a small, fast, free HuggingFace model
+        val request = HuggingFaceRequest(
+            inputs = context,
+            parameters = mapOf(
+                "max_new_tokens" to 150,
+                "temperature" to 0.8,
+                "do_sample" to true,
+                "return_full_text" to false,
+                "repetition_penalty" to 1.2
+            )
+        )
+        
+        Log.d("ChatBotService", "Sending request to HuggingFace: ${context.take(100)}...")
+        
+        val response = api.generateText("google/flan-t5-small", request)
+        
+        Log.d("ChatBotService", "API Response: ${response.code()}, Body: ${response.body()}")
+        
+        if (response.isSuccessful && response.body()?.isNotEmpty() == true) {
+            val generatedText = response.body()?.first()?.generated_text?.trim()
+            Log.d("ChatBotService", "Generated text: $generatedText")
+            
+            return if (!generatedText.isNullOrBlank()) {
+                // Clean up the response and add personalization
+                cleanAndPersonalizeResponse(generatedText, userName, formatter, totalMonthlySpending)
+            } else {
+                throw Exception("Empty response from LLM")
+            }
+        } else {
+            val errorBody = response.errorBody()?.string()
+            Log.e("ChatBotService", "API Error: ${response.code()}, Body: $errorBody")
+            throw Exception("API call failed: ${response.code()} - $errorBody")
+        }
+    }
+
+    private fun buildLLMContext(
+        userMessage: String,
+        totalMonthlySpending: Double,
+        categorySpending: Map<String, Double>,
+        subscriptionCount: Int,
+        userName: String,
+        conversationHistory: List<com.example.subtrack.ChatMessage>,
+        formatter: NumberFormat
+    ): String {
+        val recentMessages = conversationHistory.takeLast(3)
+        val conversationContext = if (recentMessages.isNotEmpty()) {
+            "Previous conversation:\n" + recentMessages.joinToString("\n") { 
+                "${if (it.isFromUser) "User" else "Assistant"}: ${it.message}" 
+            } + "\n\n"
+        } else ""
+        
+        val topCategory = categorySpending.maxByOrNull { it.value }
+        val expensiveOnes = categorySpending.filter { it.value > 30 }
+        
+        return """${conversationContext}Context: $userName is a user who spends ${formatter.format(totalMonthlySpending)} per month on $subscriptionCount subscriptions${if (topCategory != null) ". Their biggest expense is ${topCategory.key} at ${formatter.format(topCategory.value)}" else ""}${if (expensiveOnes.isNotEmpty()) ". Expensive categories: ${expensiveOnes.entries.joinToString(", ") { "${it.key} (${formatter.format(it.value)})" }}" else ""}.
+
+User question: "$userMessage"
+
+Instructions: Give $userName specific, actionable advice about their subscription spending. Be helpful, concise (2-3 sentences), and personal. Include dollar amounts when relevant."""
+    }
+
+    private fun cleanAndPersonalizeResponse(
+        response: String,
+        userName: String,
+        formatter: NumberFormat,
+        totalSpending: Double
+    ): String {
+        var cleaned = response
+            .replace(Regex("\\b(FinBot|Assistant|AI):\\s*"), "")
+            .replace(Regex("^(User|Human):\\s*.*\\n", RegexOption.MULTILINE), "")
+            .trim()
+        
+        // Ensure the response starts with a greeting if it doesn't already
+        if (!cleaned.contains(userName, ignoreCase = true) && !cleaned.startsWith("Hi") && !cleaned.startsWith("Hello")) {
+            cleaned = "Hi $userName! $cleaned"
+        }
+        
+        // Add a relevant tip based on spending if response is too generic
+        if (cleaned.length < 50 && totalSpending > 0) {
+            cleaned += " With ${formatter.format(totalSpending)}/month in subscriptions, consider reviewing which ones you actually use regularly."
+        }
+        
+        return cleaned
     }
 
     private fun buildFinancialContext(
@@ -75,7 +208,8 @@ class ChatBotService {
         totalMonthlySpending: Double,
         categorySpending: Map<String, Double>,
         userSubscriptions: List<Subscription>,
-        userName: String
+        userName: String,
+        conversationHistory: List<com.example.subtrack.ChatMessage> = emptyList()
     ): String {
         val formatter = NumberFormat.getCurrencyInstance(Locale.US)
         val annualSpending = totalMonthlySpending * 12
@@ -86,6 +220,12 @@ class ChatBotService {
             // Simple heuristic: if subscription is very cheap relative to others, might be unused
             it.amount < totalMonthlySpending * 0.1 && totalMonthlySpending > 50
         }
+        
+        // Analyze conversation context
+        val recentTopics = conversationHistory.takeLast(4).map { it.message.lowercase() }
+        val hasDiscussedBudget = recentTopics.any { it.contains("budget") }
+        val hasDiscussedSaving = recentTopics.any { it.contains("save") || it.contains("money") }
+        val hasDiscussedCanceling = recentTopics.any { it.contains("cancel") || it.contains("expensive") }
         
         // Determine advice type based on user message
         return when {
@@ -108,7 +248,13 @@ class ChatBotService {
                 generateAlternativeAdvice(userName, categorySpending, formatter)
             }
             else -> {
-                generateGeneralAdvice(userName, totalMonthlySpending, annualSpending, categorySpending.size, formatter)
+                // Generate proactive insights for general questions
+                val insights = generateProactiveInsights(userSubscriptions, totalMonthlySpending, categorySpending, formatter)
+                if (insights.isNotEmpty()) {
+                    "$insights\n\n${generateGeneralAdvice(userName, totalMonthlySpending, annualSpending, categorySpending.size, formatter)}"
+                } else {
+                    generateGeneralAdvice(userName, totalMonthlySpending, annualSpending, categorySpending.size, formatter)
+                }
             }
         }
     }
@@ -360,5 +506,42 @@ class ChatBotService {
             
             append("\n\nWhat would you like help with today?")
         }
+    }
+    
+    private fun generateProactiveInsights(
+        subscriptions: List<Subscription>,
+        totalSpending: Double,
+        categorySpending: Map<String, Double>,
+        formatter: NumberFormat
+    ): String {
+        val insights = mutableListOf<String>()
+        
+        // Check for expensive subscriptions
+        val expensiveOnes = subscriptions.filter { it.amount > 50 }
+        if (expensiveOnes.isNotEmpty()) {
+            insights.add("💡 **Insight**: You have ${expensiveOnes.size} subscription(s) over $50/month totaling ${formatter.format(expensiveOnes.sumOf { it.amount })}.")
+        }
+        
+        // Check for potential annual savings
+        if (totalSpending > 100) {
+            val annualSavings = totalSpending * 12 * 0.15
+            insights.add("💰 **Potential savings**: Switching to annual billing could save you ~${formatter.format(annualSavings)}/year!")
+        }
+        
+        // Check category balance
+        val streamingSpending = categorySpending["Streaming"] ?: 0.0
+        if (streamingSpending > totalSpending * 0.5) {
+            insights.add("📺 **Category alert**: ${((streamingSpending/totalSpending)*100).toInt()}% of your spending is on streaming services.")
+        }
+        
+        // Check for small subscriptions that might be forgotten
+        val smallSubs = subscriptions.filter { it.amount < 10 }
+        if (smallSubs.size >= 3) {
+            insights.add("🔍 **Review needed**: You have ${smallSubs.size} subscriptions under $10 - consider if you still use them all.")
+        }
+        
+        return if (insights.isNotEmpty()) {
+            "🚨 **Quick Insights**:\n${insights.joinToString("\n")}\n"
+        } else ""
     }
 }

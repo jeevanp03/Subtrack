@@ -21,6 +21,139 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.subtrack.ChatMessage
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.animation.core.*
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.lazy.LazyRow
+
+@Composable
+fun TypingIndicator() {
+    val infiniteTransition = rememberInfiniteTransition(label = "typing")
+    
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) { index ->
+            val animatedScale by infiniteTransition.animateFloat(
+                initialValue = 0.5f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(600),
+                    repeatMode = RepeatMode.Reverse,
+                    initialStartOffset = StartOffset(index * 200)
+                ),
+                label = "dot_$index"
+            )
+            
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(50)
+                    )
+                    .scale(animatedScale)
+            )
+        }
+    }
+}
+
+@Composable
+fun FormattedMessageText(
+    text: String,
+    isFromUser: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val annotatedText = buildAnnotatedString {
+        val lines = text.split("\n")
+        
+        lines.forEachIndexed { index, line ->
+            when {
+                line.startsWith("**") && line.endsWith("**") -> {
+                    // Bold headers
+                    withStyle(style = SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) {
+                        append(line.removeSurrounding("**"))
+                    }
+                }
+                line.startsWith("🚨") || line.startsWith("💡") || line.startsWith("📺") || 
+                line.startsWith("💰") || line.startsWith("🔍") -> {
+                    // Insight lines with emphasis
+                    withStyle(style = SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)) {
+                        append(line)
+                    }
+                }
+                line.startsWith("•") -> {
+                    // Bullet points with slight emphasis
+                    withStyle(style = SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Normal)) {
+                        append(line)
+                    }
+                }
+                else -> {
+                    append(line)
+                }
+            }
+            
+            if (index < lines.size - 1) {
+                append("\n")
+            }
+        }
+    }
+    
+    Text(
+        text = annotatedText,
+        modifier = modifier,
+        color = if (isFromUser) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        style = MaterialTheme.typography.bodyMedium
+    )
+}
+
+fun getSmartSuggestions(input: String): List<String> {
+    val lowercaseInput = input.lowercase()
+    
+    return when {
+        lowercaseInput.contains("save") || lowercaseInput.contains("money") -> listOf(
+            "How can I save 20% on subscriptions?",
+            "Show me alternatives to expensive services",
+            "Find unused subscriptions to cancel"
+        )
+        lowercaseInput.contains("budget") -> listOf(
+            "Create a monthly subscription budget",
+            "What's my ideal spending limit?",
+            "How much should I spend per category?"
+        )
+        lowercaseInput.contains("cancel") || lowercaseInput.contains("expensive") -> listOf(
+            "Which subscriptions cost the most?",
+            "What can I cancel without missing?",
+            "Show me subscription alternatives"
+        )
+        lowercaseInput.contains("discount") || lowercaseInput.contains("deal") -> listOf(
+            "Find student discounts",
+            "Annual vs monthly pricing",
+            "Bundle deals available"
+        )
+        else -> listOf(
+            "Analyze my spending",
+            "Save money tips",
+            "Create a budget"
+        )
+    }.take(3)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +209,16 @@ fun ChatBotScreen(
             ) {
                 if (uiState.messages.isEmpty()) {
                     item {
-                        WelcomeMessage()
+                        WelcomeMessage(onQuickActionClick = { action ->
+                            val suggestion = when (action) {
+                                "Save Money" -> "How can I save money on my subscriptions?"
+                                "Analyze Spending" -> "Analyze my current spending patterns"
+                                "Budget Help" -> "Help me create a subscription budget"
+                                "Cancel Subscriptions" -> "Which subscriptions should I consider canceling?"
+                                else -> action
+                            }
+                            viewModel.updateCurrentMessage(suggestion)
+                        })
                     }
                 }
                 
@@ -117,41 +259,56 @@ fun ChatBotScreen(
                 }
             }
 
+            // Quick suggestions when no messages
+            if (uiState.messages.isEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
             // Input field
             ChatInputField(
                 message = uiState.currentMessage,
                 onMessageChange = viewModel::updateCurrentMessage,
                 onSendMessage = viewModel::sendMessage,
-                enabled = !uiState.isLoading
+                enabled = !uiState.isLoading,
+                onQuickSuggestionClick = { suggestion ->
+                    viewModel.updateCurrentMessage(suggestion)
+                    viewModel.sendMessage()
+                }
             )
         }
     }
 }
 
 @Composable
-fun WelcomeMessage() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+fun WelcomeMessage(onQuickActionClick: (String) -> Unit = {}) {
+    Column {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
         ) {
-            Text(
-                text = "Welcome to your Financial Assistant! 💰",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "I can help you with budgeting tips, saving money, and managing your subscriptions. Ask me anything about being more frugal!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Welcome to your Financial Assistant! 💰",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "I can help you with budgeting tips, saving money, and managing your subscriptions. Ask me anything about being more frugal!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        QuickActionSuggestions(onQuickActionClick = onQuickActionClick)
     }
 }
 
@@ -200,15 +357,10 @@ fun ChatBubble(message: ChatMessage) {
                     bottomEnd = if (message.isFromUser) 4.dp else 16.dp
                 )
             ) {
-                Text(
+                FormattedMessageText(
                     text = message.message,
-                    modifier = Modifier.padding(12.dp),
-                    color = if (message.isFromUser) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    style = MaterialTheme.typography.bodyMedium
+                    isFromUser = message.isFromUser,
+                    modifier = Modifier.padding(12.dp)
                 )
             }
             Text(
@@ -270,10 +422,7 @@ fun LoadingMessage() {
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp
-                )
+                TypingIndicator()
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Thinking...",
@@ -285,13 +434,87 @@ fun LoadingMessage() {
     }
 }
 
+@Composable
+fun QuickActionSuggestions(onQuickActionClick: (String) -> Unit = {}) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Quick Actions",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QuickActionChip(
+                    icon = Icons.Default.Info,
+                    text = "Save Money",
+                    onClick = { onQuickActionClick("Save Money") }
+                )
+                QuickActionChip(
+                    icon = Icons.Default.Search,
+                    text = "Analyze Spending",
+                    onClick = { onQuickActionClick("Analyze Spending") }
+                )
+                QuickActionChip(
+                    icon = Icons.Default.Star,
+                    text = "Budget Help",
+                    onClick = { onQuickActionClick("Budget Help") }
+                )
+                QuickActionChip(
+                    icon = Icons.Default.Clear,
+                    text = "Cancel Subscriptions",
+                    onClick = { onQuickActionClick("Cancel Subscriptions") }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun QuickActionChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(text, style = MaterialTheme.typography.labelMedium) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = text,
+                modifier = Modifier.size(16.dp)
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatInputField(
     message: String,
     onMessageChange: (String) -> Unit,
     onSendMessage: () -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    onQuickSuggestionClick: (String) -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -299,14 +522,36 @@ fun ChatInputField(
             .padding(16.dp),
         verticalAlignment = Alignment.Bottom
     ) {
-        OutlinedTextField(
-            value = message,
-            onValueChange = onMessageChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("Ask about saving money...") },
-            enabled = enabled,
-            maxLines = 4
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            OutlinedTextField(
+                value = message,
+                onValueChange = onMessageChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Ask about saving money...") },
+                enabled = enabled,
+                maxLines = 4
+            )
+            
+            if (message.isNotBlank()) {
+                val suggestions = getSmartSuggestions(message)
+                if (suggestions.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        suggestions.forEach { suggestion ->
+                            SuggestionChip(
+                                onClick = { onQuickSuggestionClick(suggestion) },
+                                label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
         Spacer(modifier = Modifier.width(8.dp))
         FloatingActionButton(
             onClick = onSendMessage,
