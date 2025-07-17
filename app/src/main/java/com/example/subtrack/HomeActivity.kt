@@ -51,6 +51,11 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import com.example.subtrack.ui.calendar.CalendarUtils
 import com.example.subtrack.BiometricAuthHelper
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.nativeCanvas
 import com.example.subtrack.ui.theme.SubtrackTheme
 
 // --------------------------------------
@@ -194,9 +199,9 @@ class HomeActivity : FragmentActivity() {
             .filter { subscription ->
                 // Search filter
                 val matchesSearch = searchQuery.isBlank() ||
-                    subscription.name.contains(searchQuery, ignoreCase = true) ||
-                    subscription.category.contains(searchQuery, ignoreCase = true) ||
-                    subscription.amount.toString().contains(searchQuery)
+                        subscription.name.contains(searchQuery, ignoreCase = true) ||
+                        subscription.category.contains(searchQuery, ignoreCase = true) ||
+                        subscription.amount.toString().contains(searchQuery)
 
                 // Category filter
                 val matchesCategory = selectedCategory == null || subscription.category == selectedCategory
@@ -546,41 +551,113 @@ class HomeActivity : FragmentActivity() {
     // --------------------------------------
     @Composable
     fun MonthlyOverview(subscriptions: List<Subscription>) {
-        val frequencyMap = mutableMapOf<String, Double>()
-        // Sum total subscription cost per frequency label
-        subscriptions.forEach { sub ->
-            val label = PaymentDateUtil.getFrequencyLabel(sub.frequencyInDays)
-            val current = frequencyMap[label] ?: 0.0
-            frequencyMap[label] = current + sub.amount
-        }
+        val categoryCostMap = subscriptions.groupBy { it.category }
+            .mapValues { entry ->
+                entry.value.sumOf { sub ->
+                    when (sub.frequencyInDays) {
+                        7 -> sub.amount * 4.0                 // Weekly
+                        14 -> sub.amount * 2.0                // Bi-weekly
+                        30 -> sub.amount                      // Monthly
+                        90 -> sub.amount / 3.0                // Quarterly
+                        180 -> sub.amount / 6.0               // Semi-annually
+                        365 -> sub.amount / 12.0              // Annually
+                        else -> sub.amount                    // Default Monthly
+                    }
+                }
+            }
+
+        val totalCost = categoryCostMap.values.sum()
+        val categories = listOf("Streaming", "Productivity", "Fitness", "Other")
+
+        val colors = listOf(
+            Color(0xFF4CAF50), // Green - Streaming
+            Color(0xFF2196F3), // Blue - Productivity
+            Color(0xFFFFC107), // Amber - Fitness
+            Color(0xFF9E9E9E)  // Grey - Other
+        )
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
+                .padding(vertical = 1.dp),
+            elevation = CardDefaults.cardElevation(8.dp)
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(5.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 Text(
-                    text = "Monthly Overview",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Monthly Subscription Spending",
+                    style = MaterialTheme.typography.titleLarge
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Text("Total Subscriptions: ${subscriptions.size}")
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(150.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        var startAngle = -90f
 
-                Spacer(modifier = Modifier.height(4.dp))
+                        categories.forEachIndexed { index, category ->
+                            val cost = categoryCostMap[category] ?: 0.0
+                            val sweepAngle = if (totalCost > 0)
+                                (cost.toFloat() / totalCost.toFloat()) * 360f
+                            else 0f
 
-                Text("Recurring Cost:")
+                            drawArc(
+                                color = colors[index],
+                                startAngle = startAngle,
+                                sweepAngle = sweepAngle,
+                                useCenter = true,
+                                topLeft = Offset.Zero,
+                                size = Size(size.width, size.height)
+                            )
+                            startAngle += sweepAngle
+                        }
+                    }
 
-                frequencyMap.forEach { (label, total) ->
-                    Text("• $label: $${"%.2f".format(total)}")
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        var startAngle = -90f
+                        val radius = size.minDimension / 2.5f
+
+                        categories.forEachIndexed { index, category ->
+                            val cost = categoryCostMap[category] ?: 0.0
+                            val sweepAngle = if (totalCost > 0)
+                                (cost.toFloat() / totalCost.toFloat()) * 360f
+                            else 0f
+
+                            if (sweepAngle > 0f) {
+                                val medianAngleRad = Math.toRadians((startAngle + sweepAngle / 2).toDouble())
+                                val textX = (size.width / 2 + radius * kotlin.math.cos(medianAngleRad)).toFloat()
+                                val textY = (size.height / 2 + radius * kotlin.math.sin(medianAngleRad)).toFloat()
+
+                                drawContext.canvas.nativeCanvas.apply {
+                                    drawText(
+                                        "$category: ${"%.2f".format(cost)}",
+                                        textX,
+                                        textY,
+                                        android.graphics.Paint().apply {
+                                            color = android.graphics.Color.BLACK
+                                            textAlign = android.graphics.Paint.Align.CENTER
+                                            textSize = 24f
+                                            isFakeBoldText = true
+                                        }
+                                    )
+                                }
+                            }
+                            startAngle += sweepAngle
+                        }
+                    }
                 }
             }
         }
     }
-
 
     // --------------------------------------
     // ADD NAV BAR (Clickable/ minimlaist)
