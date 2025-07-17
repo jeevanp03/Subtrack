@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
 import kotlinx.coroutines.launch
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import com.example.subtrack.ui.calendar.CalendarUtils
 import com.example.subtrack.BiometricAuthHelper
 import androidx.compose.foundation.Canvas
@@ -54,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.nativeCanvas
+import com.example.subtrack.ui.theme.SubtrackTheme
 
 // --------------------------------------
 // MAIN ACTIVITY: Entry point for Subtrak app
@@ -67,83 +70,103 @@ class HomeActivity : FragmentActivity() {
         val db = SubscriptionDatabase.getDatabase(applicationContext)
 
         setContent {
-            var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
-            var loggedInUserId by rememberSaveable { mutableStateOf<Long?>(null) }
-            val scope = rememberCoroutineScope()
+            SubtrackTheme {
+                // Initialize biometric auth helper
+                val biometricAuthHelper = remember { BiometricAuthHelper(applicationContext)}
+                var screenState by rememberSaveable { mutableStateOf(ScreenState.LOGIN) }
+                var loggedInUserId by rememberSaveable { mutableStateOf<Long?>(null) }
+                val scope = rememberCoroutineScope()
 
-            // Initialize biometric auth helper
-            val biometricAuthHelper = remember { BiometricAuthHelper(applicationContext) }
-
-            when (screenState) {
-                ScreenState.LOGIN -> {  // Show login screen
-                    LoginScreen(
-                        onLogin = { email, password, onResult ->
-                            scope.launch {
-                                val account = db.accountDao().getAccountByEmail(email)
-                                if (account != null && account.password == password) {
-                                    loggedInUserId = account.id
-                                    onResult(true, account.id)
-                                    screenState = ScreenState.HOME
+                when (screenState) {
+                    ScreenState.LOGIN -> {  // Show login screen
+                        LoginScreen(
+                            onLogin = { email, password, onResult ->
+                                scope.launch {
+                                    val account = db.accountDao().getAccountByEmail(email)
+                                    if (account != null && account.password == password) {
+                                        loggedInUserId = account.id
+                                        onResult(true, account.id)
+                                        screenState = ScreenState.HOME
+                                    } else {
+                                        onResult(false, null)
+                                    }
+                                }
+                            },
+                            onNavigateToCreateAccount = {
+                                screenState =
+                                    ScreenState.CREATE_ACCOUNT // Navigate to account creation screen
+                            },
+                            onBiometricLogin = {
+                                if (biometricAuthHelper.isBiometricAvailable()) {
+                                    biometricAuthHelper.showBiometricPrompt(
+                                        activity = this@HomeActivity,
+                                        onSuccess = {
+                                            // For demo purposes, we'll use a default user ID
+                                            // In a real app, you'd store the user ID securely and retrieve it here
+                                            loggedInUserId = 1L
+                                            screenState = ScreenState.HOME
+                                            Toast.makeText(
+                                                applicationContext,
+                                                "Biometric authentication successful!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        onError = { error ->
+                                            Toast.makeText(
+                                                applicationContext,
+                                                "Biometric error: $error",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        onFailed = {
+                                            Toast.makeText(
+                                                applicationContext,
+                                                "Biometric authentication failed",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
                                 } else {
-                                    onResult(false, null)
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Biometric authentication not available",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
-                        },
-                        onNavigateToCreateAccount = {
-                            screenState = ScreenState.CREATE_ACCOUNT // Navigate to account creation screen
-                        },
-                        onBiometricLogin = {
-                            if (biometricAuthHelper.isBiometricAvailable()) {
-                                biometricAuthHelper.showBiometricPrompt(
-                                    activity = this@HomeActivity,
-                                    onSuccess = {
-                                        // For demo purposes, we'll use a default user ID
-                                        // In a real app, you'd store the user ID securely and retrieve it here
-                                        loggedInUserId = 1L
-                                        screenState = ScreenState.HOME
-                                        Toast.makeText(applicationContext, "Biometric authentication successful!", Toast.LENGTH_SHORT).show()
-                                    },
-                                    onError = { error ->
-                                        Toast.makeText(applicationContext, "Biometric error: $error", Toast.LENGTH_SHORT).show()
-                                    },
-                                    onFailed = {
-                                        Toast.makeText(applicationContext, "Biometric authentication failed", Toast.LENGTH_SHORT).show()
-                                    }
+                        )
+                    }
+
+
+                    ScreenState.CREATE_ACCOUNT -> { // Show account creation screen
+                        CreateAccountScreen(
+                            db = db,
+                            onBackToLogin = {
+                                screenState = ScreenState.LOGIN // Return to login screen
+                            }
+                        )
+                    }
+
+                    ScreenState.HOME -> {
+                        loggedInUserId?.let { uid ->
+                            val viewModelFactory = remember(uid) {
+                                SubscriptionViewModelFactory(application, uid)
+                            }
+                            val viewModel: SubscriptionViewModel =
+                                androidx.lifecycle.viewmodel.compose.viewModel(
+                                    key = "user_$uid",
+                                    factory = viewModelFactory
                                 )
-                            } else {
-                                Toast.makeText(applicationContext, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    )
-                }
 
-                ScreenState.CREATE_ACCOUNT -> { // Show account creation screen
-                    CreateAccountScreen(
-                        db = db,
-                        onBackToLogin = {
-                            screenState = ScreenState.LOGIN // Return to login screen
+                            HomeScreen(
+                                viewModel = viewModel,
+                                userId = uid,
+                                onLogout = {
+                                    loggedInUserId = null
+                                    screenState = ScreenState.LOGIN
+                                }
+                            )
                         }
-                    )
-                }
-
-                ScreenState.HOME -> {
-                    loggedInUserId?.let { uid ->
-                        val viewModelFactory = remember(uid) {
-                            SubscriptionViewModelFactory(application, uid)
-                        }
-                        val viewModel: SubscriptionViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                            key = "user_$uid",
-                            factory = viewModelFactory
-                        )
-
-                        HomeScreen(
-                            viewModel = viewModel,
-                            userId = uid,
-                            onLogout = {
-                                loggedInUserId = null
-                                screenState = ScreenState.LOGIN
-                            }
-                        )
                     }
                 }
             }
@@ -228,7 +251,10 @@ class HomeActivity : FragmentActivity() {
                         category = intent.getStringExtra("SUB_CATEGORY") ?: "",
                         renewalsPerYear = intent.getIntExtra("SUB_RENEWALS", 12),
                         frequencyInDays = intent.getIntExtra("SUB_FREQ_DAYS", 30),
-                        nextPaymentDate = intent.getLongExtra("SUB_NEXT_PAYMENT", System.currentTimeMillis()),
+                        nextPaymentDate = intent.getLongExtra(
+                            "SUB_NEXT_PAYMENT",
+                            System.currentTimeMillis()
+                        ),
                         remindDaysBefore = intent.getIntExtra("SUB_REMIND_BEFORE", 1),
                         userId = userId ?: -1L
                     )
@@ -247,7 +273,7 @@ class HomeActivity : FragmentActivity() {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Subtrak") },
+                    title = { Text("Subtrak", color = MaterialTheme.colorScheme.primary) },
                     actions = {
                         IconButton(onClick = {
                             viewModel.clearAllData()
@@ -380,7 +406,13 @@ class HomeActivity : FragmentActivity() {
         var showMarkPaidDialog by remember { mutableStateOf(false) }
         var showCancelDialog by remember { mutableStateOf(false) }
 
+        val cardColor = when {
+            daysUntilPayment <= 5 -> MaterialTheme.colorScheme.errorContainer // red
+            daysUntilPayment <= 10 -> MaterialTheme.colorScheme.tertiaryContainer // yellow
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        }
         Card(
+            colors = CardDefaults.cardColors(containerColor = cardColor),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 2.dp),
@@ -389,13 +421,28 @@ class HomeActivity : FragmentActivity() {
             Column(modifier = Modifier.padding(12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = sub.name,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(
+                                id = getSubscriptionIcon(
+                                    sub.name,
+                                    sub.category
+                                )
+                            ),
+                            contentDescription = sub.name,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(end = 8.dp)
+                        )
+                        Text(
+                            text = sub.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
                     if (isOverdue) {
                         Text(
                             text = "OVERDUE",
@@ -474,6 +521,27 @@ class HomeActivity : FragmentActivity() {
                     }
                 }
             )
+        }
+    }
+
+    @Composable
+    fun getSubscriptionIcon(name: String, category: String): Int {
+        val context = LocalContext.current
+        val normalized = name.lowercase()
+            .replace(Regex("[^a-z0-9]"), "") // removes spaces, punctuation, special chars
+        val resId = remember(normalized) {
+            context.resources.getIdentifier(normalized, "drawable", context.packageName)
+        }
+
+        return if (resId != 0) {
+            resId
+        } else {
+            when (category.lowercase()) {
+                "streaming" -> R.drawable.ic_streaming
+                "productivity" -> R.drawable.ic_productivity
+                "fitness" -> R.drawable.ic_fitness
+                else -> R.drawable.ic_generic
+            }
         }
     }
 
@@ -980,8 +1048,4 @@ class HomeActivity : FragmentActivity() {
         DUE_SOON("Due in 7 days"),
         ACTIVE("Due later")
     }
-
-    // --------------------------------------
-    // NOTIFCATIONS BANNER (IE incoming payment...for snapchat)
-    // --------------------------------------
 }
