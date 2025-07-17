@@ -31,13 +31,25 @@ class ChatBotRepository(
         val userEmail = userAccount?.email ?: "user@example.com"
         
         // Get user's subscription data for context
-        val userSubscriptions = subscriptionDao.getAllSync().filter { it.userId == userId }
+        val userSubscriptions = try {
+            subscriptionDao.getSubscriptionsByUserSync(userId)
+        } catch (e: Exception) {
+            emptyList()
+        }
         
-        // Generate AI response with actual user data
+        // Get recent conversation history for context
+        val recentMessages = try {
+            chatMessageDao.getRecentMessages(userId)
+        } catch (e: Exception) {
+            emptyList()
+        }
+        
+        // Generate AI response with actual user data and conversation context
         val botResponse = chatBotService.generateFinancialAdvice(
             message,
             userSubscriptions,
-            userEmail
+            userEmail,
+            recentMessages
         )
 
         // Save bot response

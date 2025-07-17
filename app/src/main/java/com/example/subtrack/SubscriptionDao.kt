@@ -23,6 +23,9 @@ interface SubscriptionDao {
 
     @Query("SELECT * FROM subscriptions ORDER BY nextPaymentDate ASC")
     suspend fun getAllSync(): List<Subscription>
+    
+    @Query("SELECT * FROM subscriptions WHERE userId = :userId ORDER BY nextPaymentDate ASC")
+    suspend fun getSubscriptionsByUserSync(userId: Long): List<Subscription>
 
     @Query("SELECT * FROM subscriptions WHERE nextPaymentDate <= :timestamp ORDER BY nextPaymentDate ASC")
     fun getUpcomingPayments(timestamp: Long): Flow<List<Subscription>>

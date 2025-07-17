@@ -18,4 +18,5 @@ interface ChatMessageDao {
 
     @Query("SELECT * FROM chat_messages WHERE userId = :userId ORDER BY timestamp DESC LIMIT 10")
     suspend fun getRecentMessages(userId: Long): List<ChatMessage>
+    
 }
