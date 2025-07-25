@@ -46,6 +46,7 @@ import androidx.compose.animation.shrinkVertically
 import com.example.subtrack.ui.account.LoginScreen
 import com.example.subtrack.ui.account.CreateAccountScreen
 import com.example.subtrack.ui.account.ScreenState
+import com.example.subtrack.ui.account.ProfileScreen
 import kotlinx.coroutines.launch
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -165,9 +166,20 @@ class HomeActivity : FragmentActivity() {
                                 onLogout = {
                                     loggedInUserId = null
                                     screenState = ScreenState.LOGIN
+                                },
+                                onNavigateToProfile = {
+                                    screenState = ScreenState.PROFILE
                                 }
                             )
                         }
+                    }
+                    
+                    ScreenState.PROFILE -> {
+                        ProfileScreen(
+                            onNavigateBack = {
+                                screenState = ScreenState.HOME
+                            }
+                        )
                     }
                 }
             }
@@ -181,7 +193,8 @@ class HomeActivity : FragmentActivity() {
     fun HomeScreen(
         viewModel: SubscriptionViewModel,
         userId: Long?,
-        onLogout: () -> Unit
+        onLogout: () -> Unit,
+        onNavigateToProfile: () -> Unit
     ) {
         val subscriptions by viewModel.subscriptions.collectAsState(emptyList())
         val context = LocalContext.current
@@ -191,6 +204,7 @@ class HomeActivity : FragmentActivity() {
         var selectedAmountRange by rememberSaveable { mutableStateOf<AmountRange?>(null) }
         var selectedPaymentStatus by rememberSaveable { mutableStateOf<PaymentStatus?>(null) }
         var sortOrder by rememberSaveable { mutableStateOf(SortOrder.NEXT_PAYMENT) }
+        var showProfilePopup by rememberSaveable { mutableStateOf(false) }
 
         // Get unique categories for filter chips
         val categories = subscriptions.map { it.category }.distinct().sorted()
@@ -287,7 +301,7 @@ class HomeActivity : FragmentActivity() {
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = "Clear Database")
                         }
-                        IconButton(onClick = { /* Future profile */ }) {
+                        IconButton(onClick = { showProfilePopup = true }) {
                             Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                         }
                     }
@@ -396,6 +410,35 @@ class HomeActivity : FragmentActivity() {
                     }
                 }
             }
+        }
+        
+        // Profile Popup Dialog
+        if (showProfilePopup) {
+            AlertDialog(
+                onDismissRequest = { showProfilePopup = false },
+                title = { Text("Profile Options") },
+                text = { Text("What would you like to do?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showProfilePopup = false
+                            onNavigateToProfile()
+                        }
+                    ) {
+                        Text("View Profile")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showProfilePopup = false
+                            onLogout()
+                        }
+                    ) {
+                        Text("Logout")
+                    }
+                }
+            )
         }
     }
 
