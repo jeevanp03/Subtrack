@@ -20,6 +20,7 @@ fun SubscriptionListScreen(userId: Long, viewModel: SubscriptionViewModel = view
 
     var showDialog by remember { mutableStateOf(false) }
     var editingSubscription by remember { mutableStateOf<Subscription?>(null) }
+    var showDeleteConfirmation by remember { mutableStateOf<Subscription?>(null) }
 
 
     Scaffold(
@@ -65,7 +66,7 @@ fun SubscriptionListScreen(userId: Long, viewModel: SubscriptionViewModel = view
                             }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Edit")
                             }
-                            IconButton(onClick = { viewModel.delete(sub) }) {
+                            IconButton(onClick = { showDeleteConfirmation = sub }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete")
                             }
                         }
@@ -104,6 +105,30 @@ fun SubscriptionListScreen(userId: Long, viewModel: SubscriptionViewModel = view
                     }
                     viewModel.insert(subscription)
                     showDialog = false
+                }
+            )
+        }
+
+        // Delete confirmation dialog
+        showDeleteConfirmation?.let { subscription ->
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmation = null },
+                title = { Text("Delete Subscription") },
+                text = { Text("Are you sure you want to delete '${subscription.name}'? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.delete(subscription)
+                            showDeleteConfirmation = null
+                        }
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirmation = null }) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
