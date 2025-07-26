@@ -19,7 +19,7 @@ Subtrack is a project designed to help people manage their subscriptions by noti
 | 2025-06-10 | Repo Setup                 | 1      | 1    | 1      | 1      | 1      | 1    |
 | 2025-06-10 | Environment Setup          | 0      | 0    | 0      | 1      | 0      | 0    |
 | 2025-06-15 | Repo Cleanup               | 1      | 0    | 0      | 1      | 0      | 0    |
-| 2025-06-16 | Database Setup             | 0      | 2    | 0      | 0      | 0      | 0    |
+| 2025-06-16 | Database Setup             | 0      | 2    | 1      | 0      | 0      | 0    |
 | 2025-06-16 | Home Page Setup            | 0      | 1    | 1      | 1      | 2      | 1    |
 | 2025-06-16 | Notification Setup         | 3      | 0    | 0      | 0      | 0      | 0    |
 | 2025-06-16 | Subscription Functionality | 2      | 5    | 0      | 2      | 0      | 0    |
