@@ -32,7 +32,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -340,7 +340,7 @@ class HomeActivity : FragmentActivity() {
                         containerColor = MaterialTheme.colorScheme.secondary
                     ) {
                         Icon(
-                            Icons.Default.Computer,
+                            Icons.Default.Info,
                             contentDescription = "Financial Assistant",
                             tint = MaterialTheme.colorScheme.onSecondary
                         )
