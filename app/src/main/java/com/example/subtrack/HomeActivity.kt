@@ -28,9 +28,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -305,44 +307,50 @@ class HomeActivity : FragmentActivity() {
                     }
                 )
             },
-            bottomBar = {
-                Column(
+            floatingActionButton = {
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(end = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
+                    FloatingActionButton(
                         onClick = {
                             val intent = Intent(context, AddSubscriptionActivity::class.java)
                             intent.putExtra("USER_ID", userId)
-                            launcher.launch(intent)  // ✅ Launch for result
+                            launcher.launch(intent)
                         },
-                        modifier = Modifier.fillMaxWidth(0.6f)
+                        modifier = Modifier.size(56.dp),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 6.dp,
+                            hoveredElevation = 12.dp
+                        )
                     ) {
-                        Text("Add Subscription")
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add Subscription",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
+                    
+                    FloatingActionButton(
                         onClick = {
                             val intent = Intent(context, ChatBotActivity::class.java)
                             intent.putExtra("USER_ID", userId)
                             context.startActivity(intent)
                         },
-                        modifier = Modifier.fillMaxWidth(0.6f)
+                        modifier = Modifier.size(56.dp),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 6.dp,
+                            hoveredElevation = 12.dp
+                        )
                     ) {
-                        Text("💰 Financial Assistant")
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = { onLogout() },
-                        modifier = Modifier.fillMaxWidth(0.6f)
-                    ) {
-                        Text("Logout")
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = "Financial Assistant",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
             }
