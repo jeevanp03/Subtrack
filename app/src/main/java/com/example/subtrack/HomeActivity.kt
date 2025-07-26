@@ -205,6 +205,7 @@ class HomeActivity : FragmentActivity() {
         var selectedPaymentStatus by rememberSaveable { mutableStateOf<PaymentStatus?>(null) }
         var sortOrder by rememberSaveable { mutableStateOf(SortOrder.NEXT_PAYMENT) }
         var showProfilePopup by rememberSaveable { mutableStateOf(false) }
+        var showClearDatabaseDialog by remember { mutableStateOf(false) }
 
         // Get unique categories for filter chips
         val categories = subscriptions.map { it.category }.distinct().sorted()
@@ -295,10 +296,7 @@ class HomeActivity : FragmentActivity() {
                 TopAppBar(
                     title = { Text("Subtrak", color = MaterialTheme.colorScheme.primary) },
                     actions = {
-                        IconButton(onClick = {
-                            viewModel.clearAllData()
-                            Log.d("HomeActivity", "Database cleared")
-                        }) {
+                        IconButton(onClick = { showClearDatabaseDialog = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Clear Database")
                         }
                         IconButton(onClick = { showProfilePopup = true }) {
@@ -436,6 +434,31 @@ class HomeActivity : FragmentActivity() {
                         }
                     ) {
                         Text("Logout")
+                    }
+                }
+            )
+        }
+        
+        // Clear Database Confirmation Dialog
+        if (showClearDatabaseDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearDatabaseDialog = false },
+                title = { Text("Clear All Data") },
+                text = { Text("Are you sure you want to clear all subscription data? This action cannot be undone and will delete all your subscriptions.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.clearAllData()
+                            Log.d("HomeActivity", "Database cleared")
+                            showClearDatabaseDialog = false
+                        }
+                    ) {
+                        Text("Clear All")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearDatabaseDialog = false }) {
+                        Text("Cancel")
                     }
                 }
             )

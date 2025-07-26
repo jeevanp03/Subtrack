@@ -163,6 +163,7 @@ fun ChatBotScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    var showClearChatDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
@@ -183,7 +184,7 @@ fun ChatBotScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.clearChatHistory() }) {
+                    IconButton(onClick = { showClearChatDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Clear Chat"
@@ -273,6 +274,30 @@ fun ChatBotScreen(
                 onQuickSuggestionClick = { suggestion ->
                     viewModel.updateCurrentMessage(suggestion)
                     viewModel.sendMessage()
+                }
+            )
+        }
+        
+        // Clear Chat History Confirmation Dialog
+        if (showClearChatDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearChatDialog = false },
+                title = { Text("Clear Chat History") },
+                text = { Text("Are you sure you want to clear all chat history? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.clearChatHistory()
+                            showClearChatDialog = false
+                        }
+                    ) {
+                        Text("Clear")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearChatDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
