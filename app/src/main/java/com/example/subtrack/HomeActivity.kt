@@ -310,9 +310,8 @@ class HomeActivity : FragmentActivity() {
             floatingActionButton = {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .padding(end = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FloatingActionButton(
                         onClick = {
@@ -321,7 +320,11 @@ class HomeActivity : FragmentActivity() {
                             launcher.launch(intent)
                         },
                         modifier = Modifier.size(56.dp),
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 6.dp,
+                            hoveredElevation = 12.dp
+                        )
                     ) {
                         Icon(
                             Icons.Default.Add,
@@ -337,12 +340,16 @@ class HomeActivity : FragmentActivity() {
                             context.startActivity(intent)
                         },
                         modifier = Modifier.size(56.dp),
-                        containerColor = MaterialTheme.colorScheme.secondary
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 6.dp,
+                            hoveredElevation = 12.dp
+                        )
                     ) {
                         Icon(
                             Icons.Default.Info,
                             contentDescription = "Financial Assistant",
-                            tint = MaterialTheme.colorScheme.onSecondary
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
