@@ -336,14 +336,7 @@ class HomeActivity : FragmentActivity() {
                         Text("💰 Financial Assistant")
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Button(
-                        onClick = { onLogout() },
-                        modifier = Modifier.fillMaxWidth(0.6f)
-                    ) {
-                        Text("Logout")
-                    }
                 }
             }
         ) { innerPadding ->
