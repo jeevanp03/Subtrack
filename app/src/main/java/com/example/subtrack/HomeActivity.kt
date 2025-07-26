@@ -61,6 +61,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.nativeCanvas
 import com.example.subtrack.ui.theme.SubtrackTheme
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.outlined.SmartToy
 
 // --------------------------------------
 // MAIN ACTIVITY: Entry point for Subtrak app
@@ -347,7 +348,7 @@ class HomeActivity : FragmentActivity() {
                         )
                     ) {
                         Icon(
-                            Icons.Default.Info,
+                            Icons.Outlined.SmartToy,
                             contentDescription = "Financial Assistant",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
