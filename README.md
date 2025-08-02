@@ -37,5 +37,6 @@ Subtrack is a project designed to help people manage their subscriptions by noti
 | 2026-07-16 | Filtering                  | 2      | 0    | 0      | 0      | 0      | 0    |
 | 2026-07-16 | UI - Home page             | 0      | 2    | 0      | 0      | 0      | 0    |
 | 2026-07-17 | UI - Add Subscriptions     | 0      | 1    | 0      | 0      | 0      | 0    |
+| 2026-07-17 | UI - Floating buttons      | 0      | 0    | 0      | 0      | 2      | 0    |
 
 
